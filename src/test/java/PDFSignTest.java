@@ -1087,7 +1087,7 @@ public class PDFSignTest {
 					, "118.218" // contact
 					, "CERTIFIED_NO_CHANGES_ALLOWED" // certifLevel
 					, false // signatureAlreadyExists
-					, "mysig nat&é'(-è_çà" // signatureName
+					, "mysig nat&lé'(-è_çà" // signatureName
 					, true // createNewRevision
 					, false // keepPDFACompliance
 					, true // allocateTSContainer
@@ -1292,7 +1292,7 @@ public class PDFSignTest {
 			fail();
 	}
 
-	protected boolean verif(List<PDFEnvelopedSignature> verifResults, boolean failIfKO) throws Exception {
+	public static boolean verif(List<PDFEnvelopedSignature> verifResults, boolean failIfKO) throws Exception {
 		// FIXME : verif for LTV data (DTS & DSS) (partly done for DTS)
 		boolean pdfok = true;
 		for (PDFEnvelopedSignature verifResult : verifResults) {

@@ -112,7 +112,8 @@ public class PDFVerifSignature {
 	protected static List<PDFEnvelopedSignature> verify(PdfReader reader){
 		return verify(reader, false);
 	}
-	protected static List<PDFEnvelopedSignature> verify(PdfReader reader, boolean withDocTS)  {
+	
+	public static List<PDFEnvelopedSignature> verify(PdfReader reader, boolean withDocTS)  {
 		List<PDFEnvelopedSignature> verifResult = new ArrayList<PDFEnvelopedSignature>();
 		try {
 			AcroFields af = reader.getAcroFields();

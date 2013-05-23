@@ -61,7 +61,13 @@
 					<version>1.6</version>
 					<type>jar</type>
 					<scope>compile</scope>
-				</dependency>    
+				</dependency>
+			<dependency>
+			<groupId>com.keynectis.sequoia.modules.security</groupId>
+			<artifactId>sequoia-security-signeddocument</artifactId>
+			<version>${project.version}</version>
+			<type>jar</type>
+		</dependency>	
 		<dependency>
 			<groupId>com.keynectis.sequoia.modules.security</groupId>
 			<artifactId>sequoia-security-cryptoprotocol</artifactId>

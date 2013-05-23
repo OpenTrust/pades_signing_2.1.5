@@ -140,7 +140,7 @@ public class PDFSign {
 		return null;
 	}
 
-	protected static SignReturn sign(String provider, PdfReader reader, OutputStream out, File tmpFile, String keyStoreFileName, String password, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException {
+	public static SignReturn sign(String provider, PdfReader reader, OutputStream out, File tmpFile, String keyStoreFileName, String password, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException {
 		try 
 		{
 			PKCS12File p12 = new PKCS12File(keyStoreFileName, password);
@@ -201,7 +201,9 @@ public class PDFSign {
 		return null;
 	}
 
-	public static SignReturn sign(String provider, InputStream original_pdf, OutputStream out, String keyStoreFileName, String password, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException {
+	public static SignReturn sign(String provider, InputStream original_pdf, OutputStream out, 
+			String keyStoreFileName, String password, CRL[] crls, OCSPResponse[] ocspResponseEncoded, 
+			PdfSignParameters parameters) throws SPIException {
 		log.debug(Channel.TECH, "Signing document retrieving certificate from keystore '%1$s' and using parameters %2$s", keyStoreFileName, parameters);
 		try {
 			PdfReader reader = new PdfReader(original_pdf);
@@ -213,7 +215,10 @@ public class PDFSign {
 	}
 
 	// Use for large Files
-	public static SignReturn sign(String provider, String original_pdf_name, OutputStream out, File tmpFile, String keyStoreFileName, String password, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException {
+	public static SignReturn sign(String provider, String original_pdf_name, 
+			OutputStream out, File tmpFile, String keyStoreFileName, String password, CRL[] crls, 
+			OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException 
+			{
 		log.debug(Channel.TECH, "Signing document retrieving certificate from keystore '%1$s' and using parameters %2$s", keyStoreFileName, parameters);
 		try {
 			PdfReader reader = new PdfReader(new RandomAccessFileOrArray(original_pdf_name), null);
