@@ -189,9 +189,7 @@ public class PdfSigner extends DocumentSigner{
 	
 	@Override
 	public void sign(Document doc, OutputStream os) throws Exception {
-		if (!(doc instanceof PdfDocument))
-			throw new UnsupportedOperationException(this.getClass().getCanonicalName() + " cannot sign document type " + 
-					doc.getClass().getCanonicalName());
+		checkSupportedType(doc);
 		
 		PdfDocument pdf = (PdfDocument) doc;
 		
@@ -199,6 +197,11 @@ public class PdfSigner extends DocumentSigner{
 		SignReturn newPDF = PDFSign.sign(null, pdf.reader, os, 
 				null, (PrivateKey) getSigningKey(), getSigningChainArray(),
 				getCrls(), getOcspResponses(), getSignatureParameters());		
+	}
+	
+	@Override
+	protected Class[] getSupportedDocumentTypeList() {
+		return new Class [] {PdfDocument.class};
 	}
 
 

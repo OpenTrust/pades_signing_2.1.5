@@ -640,7 +640,7 @@ public class PDFSign {
 					
 					byte[] digest = DigestHelper.getDigest(data, dataHashAlgorithm);
 					ITspClient tspClient2 = contentTimeStampParams.tspClient;
-					byte[] tsp = tspClient2.getTsp(digest, dataHashAlgorithm);
+					byte[] tsp = tspClient2.getRawTsp(digest, dataHashAlgorithm);
 					TimeStampResponse response = new TimeStampResponse(tsp);
 					padesGenerator.setContentTimeStamp(response.getTimeStampToken().getEncoded());
 
@@ -691,7 +691,7 @@ public class PDFSign {
 			ITspClient tspClient = timestampingParameters.getTspClient();
 			String digestAlgo = timestampingParameters.getTimeStampDigestAlgo();
 			byte [] digest = DigestHelper.getDigest(sap.getRangeStream(), digestAlgo);
-			byte[] tsp = tspClient.getTsp(digest, digestAlgo);
+			byte[] tsp = tspClient.getRawTsp(digest, digestAlgo);
 			TimeStampResponse response = new TimeStampResponse(tsp);
 			tsp = response.getTimeStampToken().getEncoded();
 			return signAfterPresignWithEncodedP7(sap, tsp, null, null);

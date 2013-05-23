@@ -25,6 +25,7 @@ import com.keynectis.sequoia.security.provider.impl.KSignature;
 import com.keynectis.sequoia.security.provider.impl.KeynectisProvider;
 import com.keynectis.sequoia.security.provider.impl.RSAHardKey;
 import com.keynectis.sequoia.security.signeddocument.Document;
+import com.keynectis.sequoia.security.signeddocument.DocumentSigner;
 import com.keynectis.sequoia.security.tsp.StandaloneTSP;
 import com.opentrust.pdfsign.PdfSigner;
 import com.opentrust.spi.logger.PrintStreamLogger;
@@ -119,16 +120,17 @@ public class SignerTest {
 		PDFSign.setPRODUCED_BY("Pikachu PDF");
 		
 		PdfSigner signer = new PdfSigner();
+		
 		signer.setSigningCertificate(defaultSigner.mCertificate, remoteKey);
 		signer.setHashAlgorithm("Sha-256");
 		
-		/*
+		
 		signer.setSigningCertificateTrustChain(defaultSigner.getChain());
 		signer.setLocation("Paris");
 		signer.setReason("Pikachu reason");
+		
 		signer.setContact("118.218");
 		
-		*/
 		signer.setTspClient(defaultTspClient);
 		signer.setOcspClient(defaultOcspClient);
 		

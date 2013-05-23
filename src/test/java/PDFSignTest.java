@@ -480,8 +480,7 @@ public class PDFSignTest {
 	}
 
 	@Test
-	public void testSignStreamPAdESBESWithContentTimeStampAttribute() {
-		try {
+	public void testSignStreamPAdESBESWithContentTimeStampAttribute() throws Exception {
 			PdfSignParameters parameters = PdfSignParameters.getParametersForSign("ppkms" // mode
 					, "I am the signer" // reason
 					, "Paris(France)" // location
@@ -526,10 +525,6 @@ public class PDFSignTest {
 				break;
 			}
 
-		} catch (Throwable e) {
-			e.printStackTrace();
-			fail();
-		}
 	}
 
 	@Test

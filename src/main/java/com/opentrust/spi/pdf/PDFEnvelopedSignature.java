@@ -491,7 +491,8 @@ public class PDFEnvelopedSignature {
     	byte[] tsResponse;
 		try {
 			byte [] digest = DigestHelper.getDigest(cmsSignature.getSignatureValue(), algoId);
-			byte [] fullresponse = tspClient.getTsp(digest, algoId);
+			byte [] fullresponse = tspClient.getRawTsp(digest, algoId);
+
 			TimeStampResponse response = new TimeStampResponse(fullresponse);
 			tsResponse = response.getTimeStampToken().getEncoded();
 			

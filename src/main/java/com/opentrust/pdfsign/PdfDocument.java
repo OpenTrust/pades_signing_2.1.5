@@ -15,6 +15,10 @@ public class PdfDocument implements Document {
 
 	PdfReader reader;
 	OutputStream signedStream;
+	@Override
+	public void save(OutputStream os) throws IOException {
+		throw new UnsupportedOperationException();		
+	}
 	
 	
 }
