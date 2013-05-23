@@ -108,9 +108,6 @@ import org.bouncycastle.tsp.TSPException;
 import org.bouncycastle.tsp.TimeStampResponse;
 
 import com.keynectis.sequoia.security.clients.interfaces.ITspClient;
-import com.lowagie.text.ExceptionConverter;
-import com.lowagie.text.pdf.AcroFields;
-import com.lowagie.text.pdf.PdfName;
 import com.opentrust.spi.cms.CMSForPAdESBasicGenerator;
 import com.opentrust.spi.cms.CMSSignedDataWrapper;
 import com.opentrust.spi.cms.CMSVerifier;
@@ -130,6 +127,9 @@ import com.opentrust.spi.tsp.TimeStampProcessor;
 import com.opentrust.spi.tsp.TimeStampProcessorFactory;
 import com.opentrust.spi.tsp.TimestampToken;
 import com.opentrust.spi.tsp.impl.BCTimeStampToken;
+import com.spilowagie.text.ExceptionConverter;
+import com.spilowagie.text.pdf.AcroFields;
+import com.spilowagie.text.pdf.PdfName;
 
 /**
  * This class does all the processing related to signing and verifying a PKCS#7 or PKCS#1 PDF-embedded

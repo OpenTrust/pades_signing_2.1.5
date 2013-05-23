@@ -11,9 +11,9 @@ import org.bouncycastle.x509.X509AttributeCertificate;
 
 import com.keynectis.sequoia.security.clients.interfaces.IOCSPClient;
 import com.keynectis.sequoia.security.clients.interfaces.ITspClient;
-import com.lowagie.text.pdf.PdfName;
-import com.lowagie.text.pdf.PdfSignatureAppearance;
 import com.opentrust.spi.cms.CMSForPAdESEnhancedGenerator.PolicyIdentifierParams;
+import com.spilowagie.text.pdf.PdfName;
+import com.spilowagie.text.pdf.PdfSignatureAppearance;
 
 public class PdfSignParameters {
 	private String mode;

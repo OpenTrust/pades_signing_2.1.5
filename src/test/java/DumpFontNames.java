@@ -1,10 +1,10 @@
 import java.util.Iterator;
 import java.util.TreeMap;
 
-import com.lowagie.text.pdf.PdfArray;
-import com.lowagie.text.pdf.PdfDictionary;
-import com.lowagie.text.pdf.PdfName;
-import com.lowagie.text.pdf.PdfReader;
+import com.spilowagie.text.pdf.PdfArray;
+import com.spilowagie.text.pdf.PdfDictionary;
+import com.spilowagie.text.pdf.PdfName;
+import com.spilowagie.text.pdf.PdfReader;
 
 public class DumpFontNames {
 

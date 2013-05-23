@@ -6,16 +6,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.lowagie.text.pdf.AcroFields;
-import com.lowagie.text.pdf.PRStream;
-import com.lowagie.text.pdf.PdfArray;
-import com.lowagie.text.pdf.PdfDictionary;
-import com.lowagie.text.pdf.PdfIndirectReference;
-import com.lowagie.text.pdf.PdfName;
-import com.lowagie.text.pdf.PdfObject;
-import com.lowagie.text.pdf.PdfReader;
-import com.lowagie.text.pdf.PdfStream;
-import com.lowagie.text.pdf.RandomAccessFileOrArray;
 import com.opentrust.spi.crypto.ExceptionHandler;
 import com.opentrust.spi.logger.Channel;
 import com.opentrust.spi.logger.SPILogger;
@@ -26,6 +16,16 @@ import com.opentrust.spi.pdf.PDFSign.ObjectWithRevision;
 import com.opentrust.spi.pdf.PDFSign.ObjectWithRevisionAbstractFactory;
 import com.opentrust.spi.pdf.PDFSign.VRIValidationData;
 import com.opentrust.spi.pdf.PDFSign.ValidationData;
+import com.spilowagie.text.pdf.AcroFields;
+import com.spilowagie.text.pdf.PRStream;
+import com.spilowagie.text.pdf.PdfArray;
+import com.spilowagie.text.pdf.PdfDictionary;
+import com.spilowagie.text.pdf.PdfIndirectReference;
+import com.spilowagie.text.pdf.PdfName;
+import com.spilowagie.text.pdf.PdfObject;
+import com.spilowagie.text.pdf.PdfReader;
+import com.spilowagie.text.pdf.PdfStream;
+import com.spilowagie.text.pdf.RandomAccessFileOrArray;
 
 public class PDFVerifSignature {
 

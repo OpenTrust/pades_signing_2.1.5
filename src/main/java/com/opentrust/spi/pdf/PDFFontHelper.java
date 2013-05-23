@@ -3,15 +3,15 @@ package com.opentrust.spi.pdf;
 import java.util.Iterator;
 import java.util.TreeMap;
 
-import com.lowagie.text.pdf.BaseFont;
-import com.lowagie.text.pdf.PRIndirectReference;
-import com.lowagie.text.pdf.PdfArray;
-import com.lowagie.text.pdf.PdfDictionary;
-import com.lowagie.text.pdf.PdfName;
-import com.lowagie.text.pdf.PdfReader;
 import com.opentrust.spi.crypto.ExceptionHandler;
 import com.opentrust.spi.logger.Channel;
 import com.opentrust.spi.logger.SPILogger;
+import com.spilowagie.text.pdf.BaseFont;
+import com.spilowagie.text.pdf.PRIndirectReference;
+import com.spilowagie.text.pdf.PdfArray;
+import com.spilowagie.text.pdf.PdfDictionary;
+import com.spilowagie.text.pdf.PdfName;
+import com.spilowagie.text.pdf.PdfReader;
 
 
 public class PDFFontHelper {
