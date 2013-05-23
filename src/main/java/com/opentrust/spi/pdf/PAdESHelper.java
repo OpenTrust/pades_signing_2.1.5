@@ -3,10 +3,13 @@ package com.opentrust.spi.pdf;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bouncycastle.asn1.ess.ESSCertID;
+import org.bouncycastle.asn1.ess.ESSCertIDv2;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 
-import com.opentrust.spi.helpers.logging.SPILogger;
-import com.opentrust.spi.logging.Channel;
+import com.opentrust.spi.logger.Channel;
+import com.opentrust.spi.logger.SPILogger;
+
 
 public class PAdESHelper {
 	private static SPILogger log = SPILogger.getLogger("PDFSIGN");
@@ -153,13 +156,15 @@ public class PAdESHelper {
 		}
 		
 		// 4.4.3 - signing-certificate (when SHA-1 is used) or signing-certificate-v2 (when any other than SHA-1 is used) shall be used
-		if(pdfSignature.getSigningCertificateAttribute()==null && pdfSignature.getSigningCertificateV2Attribute()==null) {
+		ESSCertID signingCertificateAttribute = pdfSignature.getSigningCertificateAttribute();
+		ESSCertIDv2 signingCertificateV2Attribute = pdfSignature.getSigningCertificateV2Attribute();
+		if(signingCertificateAttribute==null && signingCertificateV2Attribute==null) {
 			addErrorToReport(conformanceReport, "both signing-certificate and signing-certificate-v2 attributes are missing");
 			if(fastFail) return conformanceReport;
-		} else if(pdfSignature.getSigningCertificateAttribute()!=null && !"SHA1".equals(pdfSignature.getDataDigestAlgorithm())){
+		} else if(signingCertificateAttribute!=null && !"SHA1".equals(pdfSignature.getDataDigestAlgorithm())){
 			addErrorToReport(conformanceReport, "signing-certificate should not be used with "+pdfSignature.getDataDigestAlgorithm());
 			if(fastFail) return conformanceReport;
-		} else if(pdfSignature.getSigningCertificateV2Attribute()!=null && "SHA1".equals(pdfSignature.getDataDigestAlgorithm())){
+		} else if(signingCertificateV2Attribute!=null && "SHA1".equals(pdfSignature.getDataDigestAlgorithm())){
 			addErrorToReport(conformanceReport, "signing-certificate-v2 should not be used with SHA1");
 			if(fastFail) return conformanceReport;
 		}

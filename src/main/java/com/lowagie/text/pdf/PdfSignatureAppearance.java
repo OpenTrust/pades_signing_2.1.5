@@ -75,8 +75,9 @@ import com.lowagie.text.Image;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.Rectangle;
-import com.opentrust.spi.helpers.logging.SPILogger;
-import com.opentrust.spi.logging.Channel;
+import com.opentrust.spi.logger.Channel;
+import com.opentrust.spi.logger.SPILogger;
+
 
 /**
  * This class takes care of the cryptographic options and appearances that form a signature.

@@ -16,10 +16,9 @@ import com.lowagie.text.pdf.PdfObject;
 import com.lowagie.text.pdf.PdfReader;
 import com.lowagie.text.pdf.PdfStream;
 import com.lowagie.text.pdf.RandomAccessFileOrArray;
-import com.opentrust.spi.helpers.exceptions.ExceptionHandler;
-import com.opentrust.spi.helpers.exceptions.SPIException;
-import com.opentrust.spi.helpers.logging.SPILogger;
-import com.opentrust.spi.logging.Channel;
+import com.opentrust.spi.crypto.ExceptionHandler;
+import com.opentrust.spi.logger.Channel;
+import com.opentrust.spi.logger.SPILogger;
 import com.opentrust.spi.pdf.PDFSign.CRLWithRevisionFactory;
 import com.opentrust.spi.pdf.PDFSign.CertificateWithRevisionFactory;
 import com.opentrust.spi.pdf.PDFSign.OCSPResponseWithRevisionFactory;
@@ -32,7 +31,7 @@ public class PDFVerifSignature {
 
 	private static SPILogger log = SPILogger.getLogger("PDFSIGN");
 
-	public static PDFEnvelopedSignature verify(InputStream pdf_file, String signatureName) throws SPIException {
+	public static PDFEnvelopedSignature verify(InputStream pdf_file, String signatureName) {
 		PDFEnvelopedSignature verifResult = null;
 		try {
 			PdfReader reader = new PdfReader(pdf_file, null);
@@ -44,7 +43,7 @@ public class PDFVerifSignature {
 		return verifResult;
 	}
 
-	public static PDFEnvelopedSignature verify(File file, String signatureName) throws SPIException {
+	public static PDFEnvelopedSignature verify(File file, String signatureName){
 		PDFEnvelopedSignature verifResult = null;
 		try {
 			PdfReader reader = new PdfReader(new FileInputStream(file));
@@ -56,7 +55,7 @@ public class PDFVerifSignature {
 	}
 
 	// use for large files
-	public static PDFEnvelopedSignature verify(String fileName, String signatureName) throws SPIException {
+	public static PDFEnvelopedSignature verify(String fileName, String signatureName){
 		PDFEnvelopedSignature verifResult = null;
 		try {
 			PdfReader reader = new PdfReader(new RandomAccessFileOrArray(fileName), null);
@@ -67,10 +66,10 @@ public class PDFVerifSignature {
 		return verifResult;
 	}
 
-	public static List<PDFEnvelopedSignature> verify(InputStream pdf_file) throws SPIException {
+	public static List<PDFEnvelopedSignature> verify(InputStream pdf_file){
 		return verify(pdf_file, false);
 	}
-	public static List<PDFEnvelopedSignature> verify(InputStream pdf_file, boolean withDocTS) throws SPIException {
+	public static List<PDFEnvelopedSignature> verify(InputStream pdf_file, boolean withDocTS) {
 		List<PDFEnvelopedSignature> verifResult = null;
 		try {
 			PdfReader reader = new PdfReader(pdf_file, null);
@@ -81,10 +80,10 @@ public class PDFVerifSignature {
 		return verifResult;
 	}
 
-	public static List<PDFEnvelopedSignature> verify(File file) throws SPIException {
+	public static List<PDFEnvelopedSignature> verify(File file){
 		return verify(file, false);
 	}
-	public static List<PDFEnvelopedSignature> verify(File file, boolean withDocTS) throws SPIException {
+	public static List<PDFEnvelopedSignature> verify(File file, boolean withDocTS) {
 		List<PDFEnvelopedSignature> verifResult = null;
 		try {
 			PdfReader reader = new PdfReader(new FileInputStream(file));
@@ -96,10 +95,10 @@ public class PDFVerifSignature {
 	}
 
 	// use for large files
-	public static List<PDFEnvelopedSignature> verify(String fileName) throws SPIException {
+	public static List<PDFEnvelopedSignature> verify(String fileName) {
 		return verify(fileName, false);
 	}
-	public static List<PDFEnvelopedSignature> verify(String fileName, boolean withDocTS) throws SPIException {
+	public static List<PDFEnvelopedSignature> verify(String fileName, boolean withDocTS) {
 		List<PDFEnvelopedSignature> verifResult = null;
 		try {
 			PdfReader reader = new PdfReader(new RandomAccessFileOrArray(fileName), null);
@@ -110,10 +109,10 @@ public class PDFVerifSignature {
 		return verifResult;
 	}
 
-	protected static List<PDFEnvelopedSignature> verify(PdfReader reader) throws SPIException {
+	protected static List<PDFEnvelopedSignature> verify(PdfReader reader){
 		return verify(reader, false);
 	}
-	protected static List<PDFEnvelopedSignature> verify(PdfReader reader, boolean withDocTS) throws SPIException {
+	protected static List<PDFEnvelopedSignature> verify(PdfReader reader, boolean withDocTS)  {
 		List<PDFEnvelopedSignature> verifResult = new ArrayList<PDFEnvelopedSignature>();
 		try {
 			AcroFields af = reader.getAcroFields();
@@ -130,7 +129,7 @@ public class PDFVerifSignature {
 		return verifResult;
 	}
 
-	protected static PDFEnvelopedSignature verify(PdfReader reader, String name) throws SPIException {
+	protected static PDFEnvelopedSignature verify(PdfReader reader, String name) {
 		PDFEnvelopedSignature verifResult = null;
 		try {
 			AcroFields af = reader.getAcroFields();
@@ -141,7 +140,7 @@ public class PDFVerifSignature {
 		return verifResult;
 	}
 	
-	public static ValidationData verifyDSS(InputStream pdf_file) throws SPIException {
+	public static ValidationData verifyDSS(InputStream pdf_file) {
 		ValidationData verifResult = null;
 		try {
 			PdfReader reader = new PdfReader(pdf_file, null);
@@ -152,7 +151,7 @@ public class PDFVerifSignature {
 		return verifResult;
 	}
 
-	public static ValidationData verifyDSS(File file) throws SPIException {
+	public static ValidationData verifyDSS(File file) {
 		ValidationData verifResult = null;
 		try {
 			PdfReader reader = new PdfReader(new FileInputStream(file));
@@ -164,7 +163,7 @@ public class PDFVerifSignature {
 	}
 
 	// use for large files
-	public static ValidationData verifyDSS(String fileName) throws SPIException {
+	public static ValidationData verifyDSS(String fileName) {
 		ValidationData verifResult = null;
 		try {
 			PdfReader reader = new PdfReader(new RandomAccessFileOrArray(fileName), null);
@@ -175,7 +174,7 @@ public class PDFVerifSignature {
 		return verifResult;
 	}
 	
-	protected static ValidationData verifyDSS(PdfReader reader) throws SPIException {
+	protected static ValidationData verifyDSS(PdfReader reader)  {
 		ValidationData validationData = new ValidationData();
 		try {
 	        PdfDictionary catalog = reader.getCatalog();
@@ -216,31 +215,39 @@ public class PDFVerifSignature {
 		return validationData;
 	}
 	
-	private static <ConcreteObjectWithRevision extends ObjectWithRevision> List<ConcreteObjectWithRevision> getObjectsFromDSS(PdfReader reader, PdfArray objects, ObjectWithRevisionAbstractFactory<ConcreteObjectWithRevision> factory) {
+	private static <ConcreteObjectWithRevision extends ObjectWithRevision> List<ConcreteObjectWithRevision> getObjectsFromDSS(
+			PdfReader reader, PdfArray objects, ObjectWithRevisionAbstractFactory<ConcreteObjectWithRevision> factory) {
 		List<ConcreteObjectWithRevision> list = new ArrayList<ConcreteObjectWithRevision>();
-        if(objects!=null) {
-        	int readerReverseRevisionNbr = reader.getReverseRevisionNbr();
-	        for(int i=0;i<objects.size();i++) {
-	        	PdfIndirectReference pdfIR = objects.getAsIndirectObject(i);
-	        	if(pdfIR!=null) {
-		        	PdfObject object = reader.getPdfObject(pdfIR.getNumber());
-		        	if(object!=null && object.isStream()) {
-			        	PdfStream stream = (PdfStream) object;
-			        	if(stream instanceof PRStream) {
-			        		try {
-					        	byte[] objectBytes = PdfReader.getStreamBytes((PRStream)stream);
-					        	if(objectBytes!=null)
-				        			list.add(factory.createObjectWithRevision(objectBytes, readerReverseRevisionNbr-object.getReverseRevision()));
-					        	else log.debug(Channel.TECH, "objectBytes null");
-			        		} catch(Exception e) {
-			        			ExceptionHandler.handleNoThrow(e, "Found invalid bytes in DSS or VRI dictionary. Skipping it");
-			        		}
-			        	} else log.debug(Channel.TECH, "stream not a PRStream");
-		        	} else log.debug(Channel.TECH, "object null or not a stream : %1$s", object);
-	        	} else log.debug(Channel.TECH, "pdfIR null");
-	        }
-        }
-        return list;
+		if (objects != null) {
+			int readerReverseRevisionNbr = reader.getReverseRevisionNbr();
+			for (int i = 0; i < objects.size(); i++) {
+				PdfIndirectReference pdfIR = objects.getAsIndirectObject(i);
+				if (pdfIR != null) {
+					PdfObject object = reader.getPdfObject(pdfIR.getNumber());
+					if (object != null && object.isStream()) {
+						PdfStream stream = (PdfStream) object;
+						if (stream instanceof PRStream) {
+							try {
+								byte[] objectBytes = PdfReader.getStreamBytes((PRStream) stream);
+								if (objectBytes != null) {
+									int revision = readerReverseRevisionNbr	- object.getReverseRevision();
+									ConcreteObjectWithRevision createObjectWithRevision = factory.createObjectWithRevision(objectBytes, revision);
+									list.add(createObjectWithRevision);
+								} else
+									log.debug(Channel.TECH, "objectBytes null");
+							} catch (Exception e) {
+								ExceptionHandler.handleNoThrow(e,
+										"Found invalid bytes in DSS or VRI dictionary. Skipping it");
+							}
+						} else
+							log.debug(Channel.TECH, "stream not a PRStream");
+					} else
+						log.debug(Channel.TECH, "object null or not a stream : %1$s", object);
+				} else
+					log.debug(Channel.TECH, "pdfIR null");
+			}
+		}
+		return list;
 	}
 
 }

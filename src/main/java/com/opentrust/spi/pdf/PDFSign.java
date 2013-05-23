@@ -28,8 +28,19 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
+import org.apache.commons.lang.StringUtils;
+import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.ocsp.BasicOCSPResp;
+import org.bouncycastle.tsp.TimeStampResponse;
+import org.bouncycastle.util.encoders.Hex;
 
+import com.keynectis.sequoia.ca.crypto.utils.OIDUtils;
+import com.keynectis.sequoia.ca.crypto.utils.PKCS12File;
+import com.keynectis.sequoia.security.clients.OCSPClient;
+import com.keynectis.sequoia.security.clients.TspClient;
+import com.keynectis.sequoia.security.clients.interfaces.IOCSPClient;
+import com.keynectis.sequoia.security.clients.interfaces.ITspClient;
 import com.lowagie.text.Font;
 import com.lowagie.text.FontFactory;
 import com.lowagie.text.Image;
@@ -54,32 +65,22 @@ import com.lowagie.text.pdf.RandomAccessFileOrArray;
 import com.opentrust.spi.cms.CMSForPAdESBasicGenerator;
 import com.opentrust.spi.cms.CMSForPAdESEnhancedGenerator;
 import com.opentrust.spi.cms.CMSGenerator;
-import com.opentrust.spi.cms.CMSSignature;
+import com.opentrust.spi.cms.CMSSignedDataWrapper;
+import com.opentrust.spi.cms.helpers.OCSPResponse;
 import com.opentrust.spi.crypto.CRLHelper;
 import com.opentrust.spi.crypto.CertificateHelper;
 import com.opentrust.spi.crypto.CryptoConstants.AlgorithmID;
 import com.opentrust.spi.crypto.DigestHelper;
-import com.opentrust.spi.crypto.KeyStoreHelper;
-import com.opentrust.spi.helpers.exceptions.ExceptionHandler;
-import com.opentrust.spi.helpers.exceptions.SPIException;
-import com.opentrust.spi.helpers.exceptions.SPIIllegalArgumentException;
-import com.opentrust.spi.helpers.exceptions.SPIIllegalDataException;
-import com.opentrust.spi.helpers.io.HexHelper;
-import com.opentrust.spi.helpers.lang.StringHelper;
-import com.opentrust.spi.helpers.logging.SPILogger;
-import com.opentrust.spi.logging.Channel;
-import com.opentrust.spi.ocsp.OCSPResponder;
-import com.opentrust.spi.ocsp.OCSPResponderManager;
-import com.opentrust.spi.ocsp.OCSPResponse;
-import com.opentrust.spi.ocsp.OCSPResponseFactory;
+import com.opentrust.spi.crypto.ExceptionHandler;
+
+import com.opentrust.spi.logger.Channel;
+import com.opentrust.spi.logger.SPILogger;
 import com.opentrust.spi.pdf.PdfSignParameters.OCSPParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.PAdESParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.SignatureLayoutParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.TimestampingParameters;
 import com.opentrust.spi.tsp.TimeStampProcessor;
-import com.opentrust.spi.tsp.TimeStampProcessorFactory;
 import com.opentrust.spi.tsp.TimestampToken;
-import com.opentrust.spi.tsp.TimestampTokenManagerFactory;
 
 //TODO : check if there is a fileID in the document to sign. If no fileID -> no fileID in outgoing file. If fileID, use it, along with signDate, to build the new fileID
 public class PDFSign {
@@ -89,7 +90,14 @@ public class PDFSign {
 	private static int CONTENT_SIZE = 0x2502;
 	private static int TIMESTAMP_SIZE = 0x2502;
 
-	private static OCSPResponderManager ocspResponderManager = OCSPResponderManager.getInstance();
+	//private static OCSPResponderManager ocspResponderManager = OCSPResponderManager.getInstance();
+	protected IOCSPClient ocspClient;
+	protected ITspClient tspClient;
+	
+	/*
+	static IOCSPClient defaultOCSPClient;
+	static ITspClient defaultTspClient;
+	*/
 
 	private static PdfName DOCTIMESTAMP= new PdfName("DocTimeStamp");
 	static PdfName DSS= new PdfName("DSS");
@@ -111,16 +119,21 @@ public class PDFSign {
 	
 	/****************** BEGIN SIGN METHODS ************************/
 
-	public static SignReturn sign(String provider, PdfReader reader, OutputStream out, File tmpFile, PrivateKey priv, Certificate[] certificateChain, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException {
+	public static SignReturn sign(String provider, PdfReader reader, OutputStream out, File tmpFile, PrivateKey priv,
+			Certificate[] certificateChain, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters)
+			throws SPIException {
 		try {
 			Certificate signerCert = null;
-			if(certificateChain!=null & certificateChain.length!=0) signerCert = certificateChain[0];
+			if (certificateChain != null & certificateChain.length != 0)
+				signerCert = certificateChain[0];
 			PdfStamper stp = prepareSign(reader, out, tmpFile, signerCert, parameters);
 			PdfSignatureAppearance sap = stp.getSignatureAppearance();
-			
-			SignResult signResult = cms_sign(provider, sap.getRangeStream(), priv, certificateChain, parameters, crls, ocspResponseEncoded);
 
-			return signAfterPresignWithEncodedP7(sap, signResult.getEncodedPkcs7(), parameters, signResult.getTimestampToken());
+			SignResult signResult = cms_sign(provider, sap.getRangeStream(), priv, certificateChain, parameters, crls,
+					ocspResponseEncoded);
+
+			return signAfterPresignWithEncodedP7(sap, signResult.getEncodedPkcs7(), parameters,
+					signResult.getTimestampToken());
 		} catch (Exception e) {
 			ExceptionHandler.handle(e);
 		}
@@ -128,12 +141,17 @@ public class PDFSign {
 	}
 
 	protected static SignReturn sign(String provider, PdfReader reader, OutputStream out, File tmpFile, String keyStoreFileName, String password, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException {
-		try {
+		try 
+		{
+			PKCS12File p12 = new PKCS12File(keyStoreFileName, password);
+			/*
 			KeyStore keyStore = KeyStoreHelper.load(keyStoreFileName, password);
 			String alias = KeyStoreHelper.getDefaultAlias(keyStore);
 			Certificate[] chain = (Certificate[]) keyStore.getCertificateChain(alias);
 			PrivateKey priv = (PrivateKey) (keyStore.getKey(alias, password.toCharArray()));
-			
+			*/
+			Certificate[] chain = p12.getChain();
+			PrivateKey priv = p12.mPrivateKey;
 			return sign(provider, reader, out, tmpFile, priv, chain, crls, ocspResponseEncoded, parameters);
 		} catch (Exception e) {
 			ExceptionHandler.handle(e);
@@ -286,7 +304,7 @@ public class PDFSign {
 			PdfSignatureAppearance sap = stp.getSignatureAppearance();
 			
 			String dataHashAlgo = parameters.getDataHashAlgorithm();
-			if(dataHashAlgo==null) throw new SPIIllegalArgumentException("digestAlgo required for preSignForRawSignature");
+			if(dataHashAlgo==null) throw new IllegalArgumentException("digestAlgo required for preSignForRawSignature");
 
 			// Computing data to sign hash
 			MessageDigest messageDigest = MessageDigest.getInstance(dataHashAlgo);
@@ -345,25 +363,41 @@ public class PDFSign {
 		return null;
 	}
 
-	protected static SignReturn signAfterPresignWithRawSignature(PdfReader original_pdf, OutputStream out, File tmpFile, byte[] rawSignature, byte[] encodedUnsignedPkcs7, Certificate signerCert, PdfSignParameters parameters) throws SPIException {
+	protected static SignReturn signAfterPresignWithRawSignature(PdfReader original_pdf, OutputStream out,
+			File tmpFile, byte[] rawSignature, byte[] encodedUnsignedPkcs7, Certificate signerCert,
+			PdfSignParameters parameters) throws SPIException {
 		try {
 			log.debug(Channel.TECH, "Signing document with incoming raw signature, using parameters %1$s", parameters);
 
-			// TODO : see if we can use something like CMSSignedData.replaceSigners instead, to start from the unsigned p7 and only change its signaturevalue
-			CMSSignature unsignedCmsSignature = new CMSSignature(encodedUnsignedPkcs7);
+			// TODO : see if we can use something like
+			// CMSSignedData.replaceSigners instead, to start from the unsigned
+			// p7 and only change its signaturevalue
+			CMSSignedDataWrapper unsignedCmsSignature = new CMSSignedDataWrapper(encodedUnsignedPkcs7);
 			CRL[] crlList = null;
-			if(unsignedCmsSignature.getCRLs()!=null) crlList = (CRL[])unsignedCmsSignature.getCRLs().toArray(new CRL[] {});
-			OCSPResponse[] ocspResponseEncoded = unsignedCmsSignature.getOCSPResponses().toArray(new OCSPResponse[]{});
-			
-			PDFEnvelopedSignature signedotp7 = new PDFEnvelopedSignature(unsignedCmsSignature.getDigestAttribute(), unsignedCmsSignature.getSignatureCertificateInfo().toArray(new Certificate[]{}), crlList, ocspResponseEncoded, unsignedCmsSignature.getDataDigestAlgorithm().getTag(), BouncyCastleProvider.PROVIDER_NAME, rawSignature, null, unsignedCmsSignature.getSignatureAlgorithm(), unsignedCmsSignature.getSigningTime()); 
-			
+			if (unsignedCmsSignature.getCRLs() != null)
+				crlList = (CRL[]) unsignedCmsSignature.getCRLs().toArray(new CRL[] {});
+			OCSPResponse[] ocspResponseEncoded = unsignedCmsSignature.getOCSPResponses().toArray(new OCSPResponse[] {});
+
+			String dataDigestAlgorithm = unsignedCmsSignature.getDataDigestAlgorithm();
+			try
+			{
+				DERObjectIdentifier oid = new DERObjectIdentifier(dataDigestAlgorithm);
+				dataDigestAlgorithm = OIDUtils.getName(oid);
+			}
+			catch(Exception e) {}
+			PDFEnvelopedSignature signedotp7 = new PDFEnvelopedSignature(unsignedCmsSignature.getDigestAttribute(),
+					unsignedCmsSignature.getSignatureCertificateInfo().toArray(new Certificate[] {}), crlList,
+					ocspResponseEncoded, dataDigestAlgorithm,
+					BouncyCastleProvider.PROVIDER_NAME, rawSignature, null,
+					unsignedCmsSignature.getSignatureAlgorithm(), unsignedCmsSignature.getSigningTime());
+
 			byte[] p7 = signedotp7.getEncodedPKCS7();
 			TimestampingParameters tsParams = parameters.getTimeStampParams();
-			if(tsParams!=null) {
-		    	//fetch timestamp and add it to p7
-		    	CMSSignature cmsSignature = new CMSSignature(p7);
-				PDFEnvelopedSignature.addTSToCMS(cmsSignature, null, null, tsParams.getTimeStampServerURL(), tsParams.getTimeStampDigestAlgo(), tsParams.getTimeStampPolicyOID(), tsParams.isTimeStampUseNonce());
-		    	p7 = cmsSignature.getEncoded();
+			if (tsParams != null) {
+				// fetch timestamp and add it to p7
+				CMSSignedDataWrapper cmsSignature = new CMSSignedDataWrapper(p7);
+				PDFEnvelopedSignature.addTSToCMS(cmsSignature, tsParams.getTimeStampDigestAlgo(), tsParams.getTspClient());
+				p7 = cmsSignature.getEncoded();
 			}
 
 			return signAfterPresignWithEncodedP7(original_pdf, out, tmpFile, p7, signerCert, parameters);
@@ -394,34 +428,44 @@ public class PDFSign {
 	 * 
 	 * tspToken, when provided, is already inside encodedPkcs7 and results from using parameters.getTimeStampParams()
 	 */
-	protected static SignReturn signAfterPresignWithEncodedP7(PdfSignatureAppearance sap, byte[] encodedPkcs7, PdfSignParameters parameters, TimestampToken tspToken) throws SPIException {
-		
+	protected static SignReturn signAfterPresignWithEncodedP7(PdfSignatureAppearance sap, byte[] encodedPkcs7,
+			PdfSignParameters parameters, TimestampToken tspToken) throws SPIException {
+
 		SignReturn retour = null;
-		log.debug(Channel.TECH, "Signing document with incoming CMS-encoded signature, using parameters %1$s", parameters);
+		log.debug(Channel.TECH, "Signing document with incoming CMS-encoded signature, using parameters %1$s",
+				parameters);
 		try {
 			PdfDictionary dic2 = new PdfDictionary();
-			
-			// We re-compute the size that was allocated in the original pdf to receive the PKCS#7, and compare it with actual pkcs#7 data size
+
+			// We re-compute the size that was allocated in the original pdf to
+			// receive the PKCS#7, and compare it with actual pkcs#7 data size
 			// TODO adapt to CRL size
 			int content_size = CONTENT_SIZE;
-			if(parameters!=null) {
-				if(parameters.getSignatureContainerSize()>0) content_size = parameters.getSignatureContainerSize();
+			if (parameters != null) {
+				if (parameters.getSignatureContainerSize() > 0)
+					content_size = parameters.getSignatureContainerSize();
 				int ts_size = TIMESTAMP_SIZE;
-				if(parameters.getTimeStampContainerSize()>0) ts_size = parameters.getTimeStampContainerSize();
-				if(parameters.isAllocateTimeStampContainer() || parameters.getTimeStampParams()!=null) {
-					log.debug(Channel.TECH, "adding %1$s to content_size(%2$s) because of timestamping", ts_size, content_size);
+				if (parameters.getTimeStampContainerSize() > 0)
+					ts_size = parameters.getTimeStampContainerSize();
+				if (parameters.isAllocateTimeStampContainer() || parameters.getTimeStampParams() != null) {
+					log.debug(Channel.TECH, "adding %1$s to content_size(%2$s) because of timestamping", ts_size,
+							content_size);
 					content_size += ts_size;
 				}
 			}
 			byte out[] = new byte[content_size];
-			log.debug(Channel.TECH, "adding P7 in PDF. Size in bytes is %1$s and signblock size is %2$s", encodedPkcs7.length, out.length);
-			if(encodedPkcs7.length>out.length) throw new SPIException("Signature size (%1$s) is bigger than expected (%2$s). Please change input estimated size or configuration default signblock size.", encodedPkcs7.length, out.length);
-			
+			log.debug(Channel.TECH, "adding P7 in PDF. Size in bytes is %1$s and signblock size is %2$s",
+					encodedPkcs7.length, out.length);
+			if (encodedPkcs7.length > out.length)
+				throw new SPIException(
+						"Signature size (%1$s) is bigger than expected (%2$s). Please change input estimated size or configuration default signblock size.",
+						encodedPkcs7.length, out.length);
+
 			System.arraycopy(encodedPkcs7, 0, out, 0, encodedPkcs7.length);
 
 			dic2.put(PdfName.CONTENTS, new PdfString(out).setHexWriting(true));
 			sap.close(dic2);
-			CMSSignature p7 = new CMSSignature(encodedPkcs7);
+			CMSSignedDataWrapper p7 = new CMSSignedDataWrapper(encodedPkcs7);
 			retour = new SignReturn(sap.getFieldName(), p7.getSignatureValue(), tspToken);
 		} catch (Exception e) {
 			ExceptionHandler.handle(e);
@@ -438,7 +482,7 @@ public class PDFSign {
 		log.debug(Channel.TECH, "Signing document with incoming CMS-encoded signature, using parameters %1$s", parameters);
 		try {
 			//Parsing incoming encodedPkcs7
-			CMSSignature p7 = new CMSSignature(encodedPkcs7);
+			CMSSignedDataWrapper p7 = new CMSSignedDataWrapper(encodedPkcs7);
 			if(p7.getSigningTime()!=null) {
 				Calendar cmsSigningTime = Calendar.getInstance();
 				cmsSigningTime.setTime(p7.getSigningTime());
@@ -502,15 +546,18 @@ public class PDFSign {
 		return cms_sign(null, digestData, keyStoreFileName, password, parameters, crls, ocspResponseEncoded);
 	}
 	
-	public static SignResult cms_sign(String provider, InputStream data, PrivateKey priv, Certificate[] certChain, PdfSignParameters parameters, CRL[] crls, OCSPResponse[] ocspResponseEncoded) throws Exception {
+	public static SignResult cms_sign(String provider, InputStream data, PrivateKey priv, Certificate[] certChain,
+			PdfSignParameters parameters, CRL[] crls, OCSPResponse[] ocspResponseEncoded) throws Exception {
 		return cms_sign(provider, data, null, priv, certChain, parameters, crls, ocspResponseEncoded);
 	}
 
-	public static SignResult cms_sign(InputStream data, String keyStoreFileName, String password, PdfSignParameters parameters, CRL[] crls, OCSPResponse[] ocspResponseEncoded) throws Exception {
+	public static SignResult cms_sign(InputStream data, String keyStoreFileName, String password,
+			PdfSignParameters parameters, CRL[] crls, OCSPResponse[] ocspResponseEncoded) throws Exception {
 		return cms_sign(data, null, keyStoreFileName, password, parameters, crls, ocspResponseEncoded);
 	}
 
-	private static SignResult cms_sign(InputStream data, byte[] digestData, String keyStoreFileName, String password, PdfSignParameters parameters, CRL[] crls, OCSPResponse[] ocspResponseEncoded) throws Exception {
+	private static SignResult cms_sign(InputStream data, byte[] digestData, String keyStoreFileName, String password,
+			PdfSignParameters parameters, CRL[] crls, OCSPResponse[] ocspResponseEncoded) throws Exception {
 		KeyStore ks = KeyStore.getInstance("pkcs12");
 		ks.load(new FileInputStream(keyStoreFileName), password.toCharArray());
 		String ALIAS = (String) ks.aliases().nextElement();
@@ -520,61 +567,91 @@ public class PDFSign {
 		return cms_sign(null, data, digestData, priv, certChain, parameters, crls, ocspResponseEncoded);
 	}
 	
-	private static SignResult cms_sign(String provider, InputStream data, byte[] digestData, PrivateKey priv, Certificate[] certChain, PdfSignParameters parameters, CRL[] crls, OCSPResponse[] ocspResponseEncoded) throws Exception {
+	private static SignResult cms_sign(String provider, InputStream data, byte[] digestData, PrivateKey priv,
+			Certificate[] certChain, PdfSignParameters parameters, CRL[] crls, OCSPResponse[] ocspResponseEncoded)
+			throws Exception {
+		IOCSPClient ocspClient = parameters.ocspClient;
+		TimestampingParameters timeStampParams = parameters.getTimeStampParams();
+		ITspClient tspClient = timeStampParams != null ? timeStampParams.getTspClient() : null; 
+			
 		Collection<OCSPResponse> ocspResponses = new ArrayList<OCSPResponse>();
-		if(ocspResponseEncoded!=null)
+		List<OCSPParameters> ocspParamsList = parameters.getOCSPParams();
+		if (ocspResponseEncoded != null)
 			ocspResponses = Arrays.asList(ocspResponseEncoded);
-		else if(parameters.getOCSPParams()!=null) {
-			for(OCSPParameters ocspParams : parameters.getOCSPParams()) {
+		else if (ocspParamsList != null) 
+		{
+			for (OCSPParameters ocspParams : ocspParamsList) {
 				log.debug(Channel.TECH, "Requests a new OCSP Response");
-				OCSPResponder ocspResponder = ocspResponderManager.getOCSPResponder(ocspParams.getOcspResponderId());
-				OCSPResponse ocspResponseFresh = ocspResponder.getOCSPResponse(ocspParams.getTargetCertificate(), ocspParams.getIssuerCertificate());
-				ocspResponses.add(ocspResponseFresh);
+				BasicOCSPResp status = parameters.ocspClient.getStatus((X509Certificate) ocspParams.getTargetCertificate(), 
+						(X509Certificate) ocspParams.getIssuerCertificate());
+				ocspResponses.add(new OCSPResponse(status));
+				/*
+				  OCSPResponder ocspResponder =
+				  ocspResponderManager.getOCSPResponder
+				  (ocspParams.getOcspResponderId()); OCSPResponse
+				  ocspResponseFresh =
+				  ocspResponder.getOCSPResponse(ocspParams.getTargetCertificate
+				  (), ocspParams.getIssuerCertificate());
+				  ocspResponses.add(ocspResponseFresh);
+				 */
+				
 			}
 		}
-		String digestAlgOID = AlgorithmID.valueOfTag(parameters.getDataHashAlgorithm()).getOID();
+		String dataHashAlgorithm = parameters.getDataHashAlgorithm();
+		String digestAlgOID = AlgorithmID.valueOfTag(dataHashAlgorithm).getOID();
 		byte[] encodedPkcs7 = null;
-		boolean isPAdesEnhancedLevel = parameters.getPadesParameters()!=null?parameters.getPadesParameters().isPadesEnhancedLevel():false;
+		PAdESParameters padesParameters = parameters.getPadesParameters();
+		boolean isPAdesEnhancedLevel = padesParameters != null ? 
+				padesParameters.isPadesEnhancedLevel() : false;
 		CMSGenerator generator = null;
-		if(isPAdesEnhancedLevel) {
-			generator = new CMSForPAdESEnhancedGenerator(provider, certChain[0], priv, certChain!=null?Arrays.asList(certChain):null, digestAlgOID, crls!=null?Arrays.asList(crls):null, ocspResponses);
-			((CMSForPAdESEnhancedGenerator)generator).setPolicyIdentifierParams(parameters.getPadesParameters().getPolicyIdentifierParams());
-			((CMSForPAdESEnhancedGenerator)generator).setClaimedAttribute(parameters.getPadesParameters().getClaimedAttributesOID(), parameters.getPadesParameters().getClaimedAttributes());
-			if(parameters.getPadesParameters().getCertifiedAttribute()!=null)
-				((CMSForPAdESEnhancedGenerator)generator).setCertifiedAttribute(parameters.getPadesParameters().getCertifiedAttribute().getEncoded());
-			//FIXME : if commitment-type and no signature-policy-identifier, implicitly set commitment-type in reason entry ?
-			if(parameters.getPadesParameters().getCommitmentTypeId()!=null)
-				((CMSForPAdESEnhancedGenerator)generator).setCommitmentTypeId(parameters.getPadesParameters().getCommitmentTypeId());
-			if(parameters.getPadesParameters().getContentTimeStampParams()!=null) {
-				if(data!=null) {
-					TimestampingParameters tsParams = parameters.getPadesParameters().getContentTimeStampParams();
-					MessageDigest hash = MessageDigest.getInstance(parameters.getDataHashAlgorithm());
-				    DigestInputStream digestInputStream = new DigestInputStream(data, hash);
-	
-					//TODO : see if digestData should be sent to TS or the whole data or something else ??? (no eContent for Pades, here we give thye whole byterange to TS)
-				   	byte[] tsResponse = PDFEnvelopedSignature.getTSResponse2(digestInputStream, tsParams.getTimeStampServerUsername(), tsParams.getTimeStampServerPassword(), tsParams.getTimeStampServerURL(), tsParams.getTimeStampDigestAlgo(), tsParams.getTimeStampPolicyOID(), tsParams.isTimeStampUseNonce());
-				   	TimestampToken timestampToken = TimestampTokenManagerFactory.getInstance(BouncyCastleProvider.PROVIDER_NAME).getTimeStampToken(tsResponse);
-					((CMSForPAdESEnhancedGenerator)generator).setContentTimeStamp(timestampToken.getEncoded());
+		
+		if (isPAdesEnhancedLevel) {
+			generator = new CMSForPAdESEnhancedGenerator(provider, certChain[0], priv,
+					certChain != null ? Arrays.asList(certChain) : null, digestAlgOID,
+					crls != null ? Arrays.asList(crls) : null, ocspResponses);
+			CMSForPAdESEnhancedGenerator padesGenerator = (CMSForPAdESEnhancedGenerator) generator;
+			padesGenerator.setPolicyIdentifierParams(padesParameters.getPolicyIdentifierParams());
+			padesGenerator.setClaimedAttribute(padesParameters.getClaimedAttributesOID(),
+					padesParameters.getClaimedAttributes());
+			if (padesParameters.getCertifiedAttribute() != null)
+				padesGenerator.setCertifiedAttribute(padesParameters.getCertifiedAttribute().getEncoded());
+			// FIXME : if commitment-type and no signature-policy-identifier,
+			// implicitly set commitment-type in reason entry ?
+			if (padesParameters.getCommitmentTypeId() != null)
+				padesGenerator.setCommitmentTypeId(padesParameters.getCommitmentTypeId());
+			TimestampingParameters contentTimeStampParams = padesParameters.getContentTimeStampParams();
+			if (contentTimeStampParams != null) {
+				if (data != null) {					
 					
-					digestData = hash.digest();
+					byte[] digest = DigestHelper.getDigest(data, dataHashAlgorithm);
+					ITspClient tspClient2 = contentTimeStampParams.tspClient;
+					byte[] tsp = tspClient2.getTsp(digest, dataHashAlgorithm);
+					TimeStampResponse response = new TimeStampResponse(tsp);
+					padesGenerator.setContentTimeStamp(response.getTimeStampToken().getEncoded());
+
+					digestData = digest;
 					data = null;
-				} //FIXME : implement else
+				} // FIXME : implement else
 			}
 		} else {
-			generator = new CMSForPAdESBasicGenerator(provider, certChain[0], priv, certChain!=null?Arrays.asList(certChain):null, parameters.getSigningTime().getTime(), digestAlgOID, crls!=null?Arrays.asList(crls):null, ocspResponses);
+			generator = new CMSForPAdESBasicGenerator(provider, certChain[0], priv,
+					certChain != null ? Arrays.asList(certChain) : null, parameters.getSigningTime().getTime(),
+					digestAlgOID, crls != null ? Arrays.asList(crls) : null, ocspResponses);
 		}
-		if(data!=null) {
+		if (data != null) {
 			encodedPkcs7 = generator.signContent(data, false);
 		} else {
 			encodedPkcs7 = generator.signReference(digestData);
 		}
 
-    	TimestampingParameters tsParams = parameters.getTimeStampParams();
-		if(tsParams==null || tsParams.getTimeStampServerURL()==null)
+		if (tspClient == null)
 			return new SignResult(encodedPkcs7, null);
-    	CMSSignature cmsSignature = new CMSSignature(encodedPkcs7);
-		PDFEnvelopedSignature.addTSToCMS(cmsSignature, tsParams.getTimeStampServerUsername(), tsParams.getTimeStampServerPassword(), tsParams.getTimeStampServerURL(), tsParams.getTimeStampDigestAlgo(), tsParams.getTimeStampPolicyOID(), tsParams.isTimeStampUseNonce());
-    	return new SignResult(cmsSignature.getEncoded(), null);
+		
+		TimestampingParameters tsParams = timeStampParams;
+
+		CMSSignedDataWrapper cmsSignature = new CMSSignedDataWrapper(encodedPkcs7);
+		PDFEnvelopedSignature.addTSToCMS(cmsSignature, tsParams.getTimeStampDigestAlgo(), tspClient);
+		return new SignResult(cmsSignature.getEncoded(), null);
 	}
 	
 	/****************** END cms_sign METHODS ************************/
@@ -582,19 +659,27 @@ public class PDFSign {
 	/****************** BEGIN LTV Timestamp METHODS ************************/
 	
 	//FIXME : other addLTVTimestamp methods (as many as sign methods ?)
-	public static SignReturn addLTVTimestamp(InputStream fileInputStream, OutputStream fileOutputStream, TimestampingParameters timestampingParameters) throws SPIException {
+	public static SignReturn addLTVTimestamp(InputStream fileInputStream, OutputStream fileOutputStream, 
+			TimestampingParameters timestampingParameters) throws SPIException {
 		try {
 			PdfReader reader = new PdfReader(fileInputStream);
 			PdfStamper stp = prepareDocTimeStamp(reader, fileOutputStream, null, timestampingParameters);
 			PdfSignatureAppearance sap = stp.getSignatureAppearance();
 			
+			/*
 		   	TimeStampProcessor timeStampProcessor = TimeStampProcessorFactory.getInstance().
    			getTimeStampProcessor(timestampingParameters.getTimeStampServerURL(), timestampingParameters.getTimeStampPolicyOID(), timestampingParameters.getTimeStampDigestAlgo(), true);
 		   	byte[] tsResponse = timeStampProcessor.timestamp(sap.getRangeStream());
 		   	
 		   	TimestampToken timestampToken = TimestampTokenManagerFactory.getInstance(BouncyCastleProvider.PROVIDER_NAME).getTimeStampToken(tsResponse);
-
-			return signAfterPresignWithEncodedP7(sap, timestampToken.getEncoded(), null, null);
+		   	*/
+			ITspClient tspClient = timestampingParameters.getTspClient();
+			String digestAlgo = timestampingParameters.getTimeStampDigestAlgo();
+			byte [] digest = DigestHelper.getDigest(sap.getRangeStream(), digestAlgo);
+			byte[] tsp = tspClient.getTsp(digest, digestAlgo);
+			TimeStampResponse response = new TimeStampResponse(tsp);
+			tsp = response.getTimeStampToken().getEncoded();
+			return signAfterPresignWithEncodedP7(sap, tsp, null, null);
 			
 		} catch (Exception e) {
 			ExceptionHandler.handle(e);
@@ -730,7 +815,7 @@ public class PDFSign {
     protected static PdfName getVRIKey(byte[] sigContent) throws SPIException {
         try {
 	        byte[] sigContentDigest = DigestHelper.getDigest(sigContent, "SHA1");
-	        return new PdfName(HexHelper.encode(sigContentDigest).toUpperCase());
+	        return new PdfName(new String(Hex.encode(sigContentDigest)).toUpperCase());
         } catch(Exception e) {
         	ExceptionHandler.handle(e);
         }
@@ -853,7 +938,8 @@ public class PDFSign {
 
 	public static class OCSPResponseWithRevisionFactory implements ObjectWithRevisionAbstractFactory<OCSPResponseWithRevision> {
 		public OCSPResponseWithRevision createObjectWithRevision(byte[] octets, int revision) throws Exception {
-			OCSPResponse ocsp = OCSPResponseFactory.getInstance().getOCSPResponse(octets);
+			//OCSPResponse ocsp = OCSPResponseFactory.getInstance().getOCSPResponse(octets);
+			OCSPResponse ocsp = new OCSPResponse(octets);
 			log.debug(Channel.TECH, "OCSP response found in dictionary");
 			return new OCSPResponseWithRevision(ocsp, revision);
 		}
@@ -969,9 +1055,13 @@ public class PDFSign {
 		
 		PdfSignatureAppearance sap = stp.getSignatureAppearance();
 		String signatureName = parameters.getSignatureName();
-		if(StringHelper.isNullOrEmpty(signatureName)) signatureName = null;
+		
+		if(org.apache.commons.lang.StringUtils.isBlank(signatureName)) 
+			signatureName = null;
+		
 		if(signatureName!=null) {
-			if(!parameters.isSignatureAlreadyExists() && reader.getAcroFields().getField(signatureName)!=null) throw new SPIIllegalDataException("A PDF field with the same name (%1$s) already exists in the document", signatureName);
+			if(!parameters.isSignatureAlreadyExists() && reader.getAcroFields().getField(signatureName)!=null) 
+				throw new SPIIllegalDataException("A PDF field with the same name (%1$s) already exists in the document", signatureName);
 			sap.setFieldName(signatureName);
 		}
 
@@ -1074,11 +1164,12 @@ public class PDFSign {
 		// We do not add a dic.put(PdfName.NAME, "XXX")) because it should only
 		// be used when "it is not possible to extract the name from the
 		// signature" (PDF reference), which is not the case here
-		if (!StringHelper.isNullOrEmpty(location))
+		//if (!StringHelper.isNullOrEmpty(location))
+		if (StringUtils.isNotEmpty(location))
 			dic.put(PdfName.LOCATION, new PdfString(location, PdfObject.TEXT_UNICODE)); // sap.setLocation doesn't work if a criptodictionary is specified
-		if (!StringHelper.isNullOrEmpty(reason))
+		if (StringUtils.isNotEmpty(reason))
 			dic.put(PdfName.REASON, new PdfString(reason, PdfObject.TEXT_UNICODE)); // sap.setReason doesn't work if a criptodictionary is specified
-		if (!StringHelper.isNullOrEmpty(contact))
+		if (StringUtils.isNotEmpty(contact))
 			dic.put(PdfName.CONTACTINFO, new PdfString(contact, PdfObject.TEXT_UNICODE)); // sap.setContact doesn't work if a criptodictionary is specified
 
 			PdfDictionary buildDic = new PdfDictionary();

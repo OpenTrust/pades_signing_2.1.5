@@ -9,6 +9,8 @@ import java.util.List;
 import org.apache.commons.lang.time.DateUtils;
 import org.bouncycastle.x509.X509AttributeCertificate;
 
+import com.keynectis.sequoia.security.clients.interfaces.IOCSPClient;
+import com.keynectis.sequoia.security.clients.interfaces.ITspClient;
 import com.lowagie.text.pdf.PdfName;
 import com.lowagie.text.pdf.PdfSignatureAppearance;
 import com.opentrust.spi.cms.CMSForPAdESEnhancedGenerator.PolicyIdentifierParams;
@@ -16,6 +18,7 @@ import com.opentrust.spi.cms.CMSForPAdESEnhancedGenerator.PolicyIdentifierParams
 public class PdfSignParameters {
 	private String mode;
 
+	public IOCSPClient ocspClient;
 	// mode can be ppkms, ppklite or ppkvs
 	// Tells whether the signing certificate comes from the windows store,
 	// adobe store or verisign plug-in store
@@ -317,6 +320,11 @@ public class PdfSignParameters {
 	}
 
 	public static class TimestampingParameters {
+		public TimestampingParameters(ITspClient tspClient, String digestAlgorithm)
+		{
+			this.tspClient = tspClient;
+			this.timeStampDigestAlgo = digestAlgorithm;
+		}
 		private String timeStampServerURL;
 
 		private String timeStampServerUsername;
@@ -338,6 +346,15 @@ public class PdfSignParameters {
 			this.timeStampDigestAlgo = timeStampDigestAlgo;
 			this.timeStampUseNonce = timeStampUseNonce;
 			this.timeStampPolicyOID = timeStampPolicyOID;
+		}
+
+		ITspClient tspClient;
+		public ITspClient getTspClient() {
+			return tspClient;
+		}
+
+		public void setTspClient(ITspClient tspClient) {
+			this.tspClient = tspClient;
 		}
 
 		public String getTimeStampDigestAlgo() {

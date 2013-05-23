@@ -66,8 +66,8 @@ import com.lowagie.text.ExceptionConverter;
 import com.lowagie.text.Image;
 import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.codec.Base64;
-import com.opentrust.spi.helpers.logging.SPILogger;
-import com.opentrust.spi.logging.Channel;
+import com.opentrust.spi.logger.Channel;
+import com.opentrust.spi.logger.SPILogger;
 
 /**
  * Query and change fields in existing documents either by method

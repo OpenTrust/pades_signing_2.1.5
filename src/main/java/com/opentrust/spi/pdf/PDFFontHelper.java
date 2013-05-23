@@ -9,10 +9,10 @@ import com.lowagie.text.pdf.PdfArray;
 import com.lowagie.text.pdf.PdfDictionary;
 import com.lowagie.text.pdf.PdfName;
 import com.lowagie.text.pdf.PdfReader;
-import com.opentrust.spi.helpers.exceptions.ExceptionHandler;
-import com.opentrust.spi.helpers.exceptions.SPIException;
-import com.opentrust.spi.helpers.logging.SPILogger;
-import com.opentrust.spi.logging.Channel;
+import com.opentrust.spi.crypto.ExceptionHandler;
+import com.opentrust.spi.logger.Channel;
+import com.opentrust.spi.logger.SPILogger;
+
 
 public class PDFFontHelper {
 	private static SPILogger log = SPILogger.getLogger("PDFSIGN");
@@ -77,7 +77,7 @@ public class PDFFontHelper {
 		}
     }
 
-    public static BaseFont getFirstBaseFont(PdfReader reader) throws SPIException {
+    public static BaseFont getFirstBaseFont(PdfReader reader) {
 		try {
 		    for (int k = 1; k <= reader.getNumberOfPages(); ++k) {
 				PdfDictionary page = reader.getPageN(k);
