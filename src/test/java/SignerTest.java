@@ -1,10 +1,12 @@
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.security.Security;
+import java.security.Signature;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
@@ -13,10 +15,15 @@ import java.util.List;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Test;
 
+import com.keynectis.sequoia.ca.crypto.keyid.KeyIdFactory;
 import com.keynectis.sequoia.ca.crypto.utils.PKCS12File;
+import com.keynectis.sequoia.crypto.store.SoftRSAStoreSigner;
 import com.keynectis.sequoia.security.clients.interfaces.IOCSPClient;
 import com.keynectis.sequoia.security.clients.interfaces.ITspClient;
 import com.keynectis.sequoia.security.ocsp.StandaloneOCSP;
+import com.keynectis.sequoia.security.provider.impl.KSignature;
+import com.keynectis.sequoia.security.provider.impl.KeynectisProvider;
+import com.keynectis.sequoia.security.provider.impl.RSAHardKey;
 import com.keynectis.sequoia.security.signeddocument.Document;
 import com.keynectis.sequoia.security.tsp.StandaloneTSP;
 import com.opentrust.pdfsign.PdfSigner;
@@ -37,6 +44,10 @@ public class SignerTest {
 	static PKCS12File tspSigner;
 	static ITspClient defaultTspClient;
 	static IOCSPClient defaultOcspClient;
+	
+	static KeynectisProvider ksProvider;
+	static SoftRSAStoreSigner rsaSigner;
+	static RSAHardKey remoteKey;
 	static {
 		try {
 			Security.addProvider(new BouncyCastleProvider());
@@ -54,21 +65,70 @@ public class SignerTest {
 			defaultTspClient = standaloneTSP;
 			defaultOcspClient = new StandaloneOCSP(defaultSigner.mCertificate, defaultSigner.mPrivateKey);
 
+			rsaSigner = new SoftRSAStoreSigner();
+			String keyId = KeyIdFactory.GetKeyId(defaultSigner.mCertificate);
+			rsaSigner.importClearKey(keyId, defaultSigner.mPrivateKey.getEncoded());
+			remoteKey = new RSAHardKey(keyId);
+
+			KSignature.setDefaultRsaSigner(rsaSigner);
+			ksProvider = new KeynectisProvider();
+			ksProvider.addSignatureAlgorithm();
+			
+			Security.insertProviderAt(ksProvider, 1);
+			
 			SPILogger.setDefaultLogger(new PrintStreamLogger(System.out));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
+
+	@Test
+	public void testSign() {
+		try {
+
+			PdfSignParameters parameters = PdfSignParameters.getParametersForSign("ppkms" // mode
+					, "I am the signer" // reason
+					, "Paris(France)" // location
+					, "118.218" // contact
+					, "CERTIFIED_NO_CHANGES_ALLOWED" // certifLevel
+					, false // signatureAlreadyExists
+					, "mysig nat&é'(-è_çà" // signatureName
+					, true // createNewRevision
+					, false // keepPDFACompliance
+					, false // allocateTSContainer
+					, 0 // TSSize
+					, 0 // SigSize
+					, "SHA1" // dataHashAlgo
+					, new GregorianCalendar());
+
+			SignReturn newPDF = PDFSign.sign(null, new FileInputStream("src/test/resources/minipdf.pdf"),
+					new FileOutputStream("target/testSign.pdf"), "src/test/resources/charles-queremma.p12", "password",
+					null, null, parameters);
+			assertNotNull(newPDF);
+
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
 	@Test 
 	public void testSigner() throws Exception
 	{
+		PDFSign.setPRODUCED_BY("Pikachu PDF");
+		
 		PdfSigner signer = new PdfSigner();
-		signer.setSigningCertificate(defaultSigner.mCertificate);
-		signer.setSigningKey(defaultSigner.mPrivateKey);
+		signer.setSigningCertificate(defaultSigner.mCertificate, remoteKey);
+		signer.setHashAlgorithm("Sha-256");
+		
+		/*
+		signer.setSigningCertificateTrustChain(defaultSigner.getChain());
 		signer.setLocation("Paris");
 		signer.setReason("Pikachu reason");
 		signer.setContact("118.218");
 		
+		*/
 		signer.setTspClient(defaultTspClient);
 		signer.setOcspClient(defaultOcspClient);
 		

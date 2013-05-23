@@ -225,7 +225,10 @@ public class CMSGenerator {
 
 		ContentSigner usedContentSigner = contentSigner;
 		if (usedContentSigner == null)
-			usedContentSigner = new JcaContentSignerBuilder(signatureAlgorithm).setProvider(provider).build(privateKey);
+		{
+			//usedContentSigner = new JcaContentSignerBuilder(signatureAlgorithm).setProvider(provider).build(privateKey);
+			usedContentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(privateKey);
+		}
 
 		CMSSignedGenerator signGen = null;
 		if (isStream)

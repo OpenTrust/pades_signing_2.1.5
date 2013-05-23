@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 
 import org.bouncycastle.ocsp.BasicOCSPResp;
 
@@ -199,6 +200,8 @@ public class PdfSigner extends DocumentSigner{
 				null, (PrivateKey) getSigningKey(), getSigningChainArray(),
 				getCrls(), getOcspResponses(), getSignatureParameters());		
 	}
+
+
 
 
 }

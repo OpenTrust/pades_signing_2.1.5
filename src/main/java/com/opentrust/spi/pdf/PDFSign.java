@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -84,6 +85,12 @@ import com.spilowagie.text.pdf.RandomAccessFileOrArray;
 
 //TODO : check if there is a fileID in the document to sign. If no fileID -> no fileID in outgoing file. If fileID, use it, along with signDate, to build the new fileID
 public class PDFSign {
+
+	public static String PRODUCED_BY = "OpenTrust SPI";
+
+	public static void setPRODUCED_BY(String pRODUCED_BY) {
+		PRODUCED_BY = pRODUCED_BY;
+	}
 
 	private static SPILogger log = SPILogger.getLogger("PDFSIGN");
 
@@ -610,10 +617,13 @@ public class PDFSign {
 				padesParameters.isPadesEnhancedLevel() : false;
 		CMSGenerator generator = null;
 		
+		Certificate signatureCertificate = certChain[0];
+		List<Certificate> certStore = certChain != null ? Arrays.asList(certChain) : null;
+		List<java.security.cert.CRL> signedCrls = crls != null ? Arrays.asList(crls) : null;
 		if (isPAdesEnhancedLevel) {
-			generator = new CMSForPAdESEnhancedGenerator(provider, certChain[0], priv,
-					certChain != null ? Arrays.asList(certChain) : null, digestAlgOID,
-					crls != null ? Arrays.asList(crls) : null, ocspResponses);
+			generator = new CMSForPAdESEnhancedGenerator(provider, signatureCertificate, priv,
+					certStore, digestAlgOID,
+					signedCrls, ocspResponses);
 			CMSForPAdESEnhancedGenerator padesGenerator = (CMSForPAdESEnhancedGenerator) generator;
 			padesGenerator.setPolicyIdentifierParams(padesParameters.getPolicyIdentifierParams());
 			padesGenerator.setClaimedAttribute(padesParameters.getClaimedAttributesOID(),
@@ -639,9 +649,9 @@ public class PDFSign {
 				} // FIXME : implement else
 			}
 		} else {
-			generator = new CMSForPAdESBasicGenerator(provider, certChain[0], priv,
-					certChain != null ? Arrays.asList(certChain) : null, parameters.getSigningTime().getTime(),
-					digestAlgOID, crls != null ? Arrays.asList(crls) : null, ocspResponses);
+			Date signingTime = parameters.getSigningTime().getTime();
+			generator = new CMSForPAdESBasicGenerator(provider, signatureCertificate, priv,
+					certStore, signingTime, digestAlgOID, signedCrls, ocspResponses);
 		}
 		if (data != null) {
 			encodedPkcs7 = generator.signContent(data, false);
@@ -1016,7 +1026,7 @@ public class PDFSign {
 				buildDataDic.put(new PdfName("Name"), PdfSignatureAppearance.WINCER_SIGNED);
 			buildDic.put(new PdfName("Filter"), buildDataDic);
 				buildDataDic = new PdfDictionary();
-				buildDataDic.put(new PdfName("Name"), new PdfName("OpenTrust SPI"));
+				buildDataDic.put(new PdfName("Name"), new PdfName(PRODUCED_BY));
 			buildDic.put(new PdfName("App"), buildDataDic);
 		dic.put(new PdfName("Prop_Build"), buildDic);
 
@@ -1182,7 +1192,7 @@ public class PDFSign {
 				buildDataDic.put(new PdfName("Name"), parameters.getFilter());
 			buildDic.put(new PdfName("Filter"), buildDataDic);
 				buildDataDic = new PdfDictionary();
-				buildDataDic.put(new PdfName("Name"), new PdfName("OpenTrust SPI"));
+				buildDataDic.put(new PdfName("Name"), new PdfName(PRODUCED_BY));
 				//TODO : see if version can be retrieved from com.opentrust.spi.securityserver.install.ProductInfo
 				//TODO : see if we can also add SPI platform ID
 				//buildDataDic.put(new PdfName("REx"), new PdfString("2.2.1", PdfObject.TEXT_UNICODE));
