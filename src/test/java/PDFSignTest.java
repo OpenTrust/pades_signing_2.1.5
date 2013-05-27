@@ -114,7 +114,7 @@ public class PDFSignTest {
 			defaultTspClient = standaloneTSP;
 			defaultOcspClient = new StandaloneOCSP(defaultSigner.mCertificate, defaultSigner.mPrivateKey);
 
-			SPILogger.setDefaultLogger(new PrintStreamLogger(System.out));
+			//SPILogger.setDefaultLogger(new PrintStreamLogger(System.out));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
