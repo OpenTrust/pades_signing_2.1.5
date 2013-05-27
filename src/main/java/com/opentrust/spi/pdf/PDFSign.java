@@ -231,7 +231,7 @@ public class PDFSign {
 			PdfReader reader = new PdfReader(new RandomAccessFileOrArray(original_pdf_name), null);
 			return sign(provider, reader, out, tmpFile, keyStoreFileName, password, crls, ocspResponseEncoded, parameters);
 		} catch (Exception e) {
-			ExceptionHandler.handle(e);
+			ExceptionHandler.handle(e, "reading file " + original_pdf_name);
 		}
 		return null;
 	}

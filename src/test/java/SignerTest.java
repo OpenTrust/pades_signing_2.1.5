@@ -77,7 +77,7 @@ public class SignerTest {
 			
 			Security.insertProviderAt(ksProvider, 1);
 			
-			SPILogger.setDefaultLogger(new PrintStreamLogger(System.out));
+			//SPILogger.setDefaultLogger(new PrintStreamLogger(System.out));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
