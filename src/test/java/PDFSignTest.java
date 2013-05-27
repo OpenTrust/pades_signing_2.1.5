@@ -203,8 +203,7 @@ public class PDFSignTest {
 	}
 
 	@Test
-	public void testSignLargePDF() {
-		try {
+	public void testSignLargePDF()  throws Exception {
 			buildLargePDF2();
 			PdfSignParameters parameters = PdfSignParameters.getParametersForSign("ppkms" // mode
 					, "I am the signer" // reason
@@ -231,10 +230,6 @@ public class PDFSignTest {
 			verif("target/testSignLargePDF.pdf", true);
 			System.out.println("VerifLargePDF in " + (new Date().getTime() - d.getTime()));
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			fail();
-		}
 	}
 
 	@Test
