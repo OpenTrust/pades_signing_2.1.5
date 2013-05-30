@@ -671,6 +671,75 @@ public class PDFSign {
 	
 	/****************** END cms_sign METHODS ************************/
 
+	public static CMSSignedDataWrapper cms_sign(String digestAlgo, byte[] digest, PrivateKey priv,
+			Certificate[] certChain, PdfSignParameters parameters, CRL[] crls, OCSPResponse[] ocspResponseEncoded)
+			throws Exception {
+		IOCSPClient ocspClient = parameters.ocspClient;
+		TimestampingParameters timeStampParams = parameters.getTimeStampParams();
+		ITspClient tspClient = timeStampParams != null ? timeStampParams.getTspClient() : null;
+
+		Collection<OCSPResponse> ocspResponses = new ArrayList<OCSPResponse>();
+		List<OCSPParameters> ocspParamsList = parameters.getOCSPParams();
+		if (ocspResponseEncoded != null)
+			ocspResponses = Arrays.asList(ocspResponseEncoded);
+		else if (ocspParamsList != null) {
+			for (OCSPParameters ocspParams : ocspParamsList) {
+				log.debug(Channel.TECH, "Requests a new OCSP Response");
+				BasicOCSPResp status = parameters.ocspClient.getStatus(
+						(X509Certificate) ocspParams.getTargetCertificate(),
+						(X509Certificate) ocspParams.getIssuerCertificate());
+				ocspResponses.add(new OCSPResponse(status));
+			}
+		}
+		String dataHashAlgorithm = parameters.getDataHashAlgorithm();
+		String digestAlgOID = AlgorithmID.valueOfTag(dataHashAlgorithm).getOID();
+		byte[] encodedPkcs7 = null;
+		PAdESParameters padesParameters = parameters.getPadesParameters();
+		boolean isPAdesEnhancedLevel = padesParameters != null ? padesParameters.isPadesEnhancedLevel() : false;
+		CMSGenerator generator = null;
+
+		Certificate signatureCertificate = certChain[0];
+		List<Certificate> certStore = certChain != null ? Arrays.asList(certChain) : null;
+		List<java.security.cert.CRL> signedCrls = crls != null ? Arrays.asList(crls) : null;
+		
+		if (isPAdesEnhancedLevel) {
+			generator = new CMSForPAdESEnhancedGenerator(null, signatureCertificate, priv, certStore, digestAlgOID,
+					signedCrls, ocspResponses);
+			CMSForPAdESEnhancedGenerator padesGenerator = (CMSForPAdESEnhancedGenerator) generator;
+			padesGenerator.setPolicyIdentifierParams(padesParameters.getPolicyIdentifierParams());
+			padesGenerator.setClaimedAttribute(padesParameters.getClaimedAttributesOID(),
+					padesParameters.getClaimedAttributes());
+			if (padesParameters.getCertifiedAttribute() != null)
+				padesGenerator.setCertifiedAttribute(padesParameters.getCertifiedAttribute().getEncoded());
+			// FIXME : if commitment-type and no signature-policy-identifier,
+			// implicitly set commitment-type in reason entry ?
+			if (padesParameters.getCommitmentTypeId() != null)
+				padesGenerator.setCommitmentTypeId(padesParameters.getCommitmentTypeId());
+			TimestampingParameters contentTimeStampParams = padesParameters.getContentTimeStampParams();
+			if (contentTimeStampParams != null) {
+				ITspClient tspClient2 = contentTimeStampParams.tspClient;
+				byte[] tsp = tspClient2.getRawTsp(digest, dataHashAlgorithm);
+				TimeStampResponse response = new TimeStampResponse(tsp);
+				padesGenerator.setContentTimeStamp(response.getTimeStampToken().getEncoded());
+
+			}
+		} else {
+			Date signingTime = parameters.getSigningTime().getTime();
+			generator = new CMSForPAdESBasicGenerator(null, signatureCertificate, priv, certStore, signingTime,
+					digestAlgOID, signedCrls, ocspResponses);
+		}
+		encodedPkcs7 = generator.signReference(digest);
+
+		CMSSignedDataWrapper cmsSignature = new CMSSignedDataWrapper(encodedPkcs7);
+		if (tspClient == null)
+			return cmsSignature;
+
+		TimestampingParameters tsParams = timeStampParams;
+
+		PDFEnvelopedSignature.addTSToCMS(cmsSignature, tsParams.getTimeStampDigestAlgo(), tspClient);
+		return cmsSignature;
+	}
+	
 	/****************** BEGIN LTV Timestamp METHODS ************************/
 	
 	//FIXME : other addLTVTimestamp methods (as many as sign methods ?)
