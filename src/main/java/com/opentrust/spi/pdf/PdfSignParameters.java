@@ -54,15 +54,16 @@ public class PdfSignParameters {
 	private String contact;
 
 	private String certifLevel;
-		public static String NOT_CERTIFIED = "NOT_CERTIFIED";
-		public static String CERTIFIED_NO_CHANGES_ALLOWED = "CERTIFIED_NO_CHANGES_ALLOWED";
-		public static String CERTIFIED_FORM_FILLING = "CERTIFIED_FORM_FILLING";
-		public static String CERTIFIED_FORM_FILLING_AND_ANNOTATIONS = "CERTIFIED_FORM_FILLING_AND_ANNOTATIONS";
-		// used for 'author' signature. Once a document
-		// is 'author-signed' (certified), you can
-		// decide which kind of further modification can
-		// be done to the document (no modif, form fill
-		// modif...)
+	
+    public final static String NOT_CERTIFIED = "NOT_CERTIFIED";
+    public final static String CERTIFIED_NO_CHANGES_ALLOWED = "CERTIFIED_NO_CHANGES_ALLOWED";
+    public final static String CERTIFIED_FORM_FILLING = "CERTIFIED_FORM_FILLING";
+    public final static String CERTIFIED_FORM_FILLING_AND_ANNOTATIONS = "CERTIFIED_FORM_FILLING_AND_ANNOTATIONS";
+    // used for 'author' signature. Once a document
+    // is 'author-signed' (certified), you can
+    // decide which kind of further modification can
+    // be done to the document (no modif, form fill
+    // modif...)
 
 	private boolean signatureAlreadyExists;
 

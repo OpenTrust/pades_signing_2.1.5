@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
 
 import org.bouncycastle.ocsp.BasicOCSPResp;
 
@@ -13,10 +12,10 @@ import com.keynectis.sequoia.security.signeddocument.DocumentSigner;
 import com.opentrust.spi.cms.helpers.OCSPResponse;
 import com.opentrust.spi.pdf.PDFSign;
 import com.opentrust.spi.pdf.PDFSign.SignReturn;
+import com.opentrust.spi.pdf.PdfSignParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.PAdESParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.SignatureLayoutParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.TimestampingParameters;
-import com.opentrust.spi.pdf.PdfSignParameters;
 
 public class PdfSigner extends DocumentSigner{
 	
@@ -31,9 +30,11 @@ public class PdfSigner extends DocumentSigner{
 	int sigSize = 0;
 	
 	PAdESParameters padesParams;
-	SignatureLayoutParameters signatureLayoutParameters;
+    SignatureLayoutParameters signatureLayoutParameters;
+    boolean signatureAlreadyExists;
+    boolean isVisible;
 	
-	@Override
+    @Override
 	public Document parseDocument(InputStream is) throws IOException {
 		return new PdfDocument(is);
 	}
@@ -129,7 +130,7 @@ public class PdfSigner extends DocumentSigner{
 				, getLocation() // location
 				, contact // contact
 				, certificationLevel // certifLevel
-				, false // signatureAlreadyExists
+				, signatureAlreadyExists // signatureAlreadyExists
 				, signatureName // signatureName
 				, createNewRevision // createNewRevision
 				, keepPDFACompliance // keepPDFACompliance
@@ -137,7 +138,7 @@ public class PdfSigner extends DocumentSigner{
 				, tsSize // TSSize
 				, sigSize // SigSize
 				, getHashAlgorithm() // dataHashAlgo
-				, getDate());
+				, getDate()); // signingTime
 		
 		if (tspClient != null)
 			parameters.setTimeStampParams(new TimestampingParameters(tspClient, getHashAlgorithm()));
@@ -187,7 +188,31 @@ public class PdfSigner extends DocumentSigner{
 		return ret;
 	}
 	
-	@Override
+   public PAdESParameters getPadesParams() {
+        return padesParams;
+    }
+
+    public void setPadesParams(PAdESParameters padesParams) {
+        this.padesParams = padesParams;
+    }
+	
+	public SignatureLayoutParameters getSignatureLayoutParameters() {
+        return signatureLayoutParameters;
+    }
+
+    public void setSignatureLayoutParameters(SignatureLayoutParameters signatureLayoutParameters) {
+        this.signatureLayoutParameters = signatureLayoutParameters;
+    }
+
+    public boolean isSignatureAlreadyExists() {
+        return signatureAlreadyExists;
+    }
+
+    public void setSignatureAlreadyExists(boolean signatureAlreadyExists) {
+        this.signatureAlreadyExists = signatureAlreadyExists;
+    }
+
+    @Override
 	public void sign(Document doc, OutputStream os) throws Exception {
 		checkSupportedType(doc);
 		
