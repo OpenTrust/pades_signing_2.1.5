@@ -17,7 +17,7 @@ import com.opentrust.spi.pdf.PdfSignParameters.PAdESParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.SignatureLayoutParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.TimestampingParameters;
 
-public class PdfSigner extends DocumentSigner{
+public class PdfSigner extends DocumentSigner {
 	
 	String mode = "ppkms";
 	String certificationLevel = "CERTIFIED_NO_CHANGES_ALLOWED";
