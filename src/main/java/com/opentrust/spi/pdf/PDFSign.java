@@ -1165,14 +1165,35 @@ public class PDFSign {
 		if (parameters.isVisible()) { // This means SignatureLayoutParameters is not null
 			log.debug(Channel.TECH, "Visible signature");
 			SignatureLayoutParameters signatureLayoutParameters = parameters.getSignatureLayoutParameters();
+			
 			if (!parameters.isSignatureAlreadyExists()) {
-				if(reader.getNumberOfPages()<signatureLayoutParameters.getPageNbr() || signatureLayoutParameters.getPageNbr()<=0) throw new SPIIllegalDataException("Invalid page number: %1$s",signatureLayoutParameters.getPageNbr());
-				Rectangle rect = reader.getPageSizeWithRotation(signatureLayoutParameters.getPageNbr());
-				if(rect.getLeft()>signatureLayoutParameters.getX1() || rect.getRight()<signatureLayoutParameters.getX2()||rect.getBottom()>signatureLayoutParameters.getY1() || rect.getTop()<signatureLayoutParameters.getY2())
-					throw new SPIIllegalDataException("Given signature rectangle (left=%1$s,right=%2$s,bottom=%3$s,top=%4$s) doesn't fit into page rectangle: (left=%5$s,right=%6$s,bottom=%7$s,top=%8$s)",signatureLayoutParameters.getX1(),signatureLayoutParameters.getX2(),signatureLayoutParameters.getY1(),signatureLayoutParameters.getY2(),rect.getLeft(),rect.getRight(),rect.getBottom(),rect.getTop());
-				sap.setVisibleSignature(new Rectangle(signatureLayoutParameters.getX1(), signatureLayoutParameters.getY1(), signatureLayoutParameters
-					.getX2(), signatureLayoutParameters.getY2()), signatureLayoutParameters.getPageNbr(), signatureName);
+				// bottom left point
+				float x1 = signatureLayoutParameters.getX1();
+				float y1 = signatureLayoutParameters.getY1();
+				// upper right
+				float x2 = signatureLayoutParameters.getX2();
+				float y2 = signatureLayoutParameters.getY2();
+				
+				int pageNbr = signatureLayoutParameters.getPageNbr();
+				if (reader.getNumberOfPages() < pageNbr || pageNbr <= 0)
+					throw new SPIIllegalDataException("Invalid page number: %1$s", pageNbr);
+
+
+				// check that the signature rectangle is contained in the page
+				Rectangle pageRectangle = reader.getPageSizeWithRotation(pageNbr);
+				float pgX1 = pageRectangle.getLeft();
+				float pgX2 = pageRectangle.getRight();
+				float pgY1 = pageRectangle.getBottom();
+				float pgY2 = pageRectangle.getTop();
+				
+				if (pgX1 > x1 || pgX2 < x2 || pgY1 > y1 || pgY2 < y2)
+					throw new SPIIllegalDataException(
+							"Given signature rectangle (left=%1$s,right=%2$s,bottom=%3$s,top=%4$s) doesn't fit into page rectangle: (left=%5$s,right=%6$s,bottom=%7$s,top=%8$s)",
+							x1, x2, y1, y2, pgX1, pgX2, pgY1, pgY2);
+
+				sap.setVisibleSignature(new Rectangle(x1, y1, x2, y2), pageNbr, signatureName);
 			}
+			
 			String description = signatureLayoutParameters.getDescription();
 			if (description != null) sap.setLayer2Text(description);
 			else if(signerCert==null) throw new SPIIllegalArgumentException("No description and no signer certificate provided. Default description cannot be created.");
