@@ -1,7 +1,5 @@
 package com.opentrust.spi.tsp;
 
-import org.apache.commons.lang.StringUtils;
-
 import com.opentrust.spi.logger.Channel;
 import com.opentrust.spi.logger.SPILogger;
 

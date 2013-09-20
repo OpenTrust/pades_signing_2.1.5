@@ -39,7 +39,6 @@ import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 
-import org.apache.commons.lang.StringUtils;
 import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
 import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
 import org.bouncycastle.asn1.x509.X509Extensions;
@@ -450,7 +449,7 @@ public class CertificateHelper {
 		}
 		String dn = certificate.getSubjectDN().getName();
 		String cn = CertificateHelper.getCNFromDN(dn);
-		if (StringUtils.isNotBlank(cn)) {
+		if (cn != null && cn.length() > 0) {
 			return cn;
 		}
 		return dn;

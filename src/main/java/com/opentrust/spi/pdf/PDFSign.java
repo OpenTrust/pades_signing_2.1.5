@@ -29,7 +29,6 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
-import org.apache.commons.lang.StringUtils;
 import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.ocsp.BasicOCSPResp;
@@ -253,14 +252,14 @@ public class PDFSign {
 		return preSign(original_pdf_name, tmpFile, null, null, null, parameters);
 	}
 
-	protected static PresignReturn preSign(PdfReader original_pdf, File tmpFile, Certificate signerCert, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException {
+	protected static PresignReturn preSign(PdfReader original_pdf, OutputStream output_pdf, File tmpFile, Certificate signerCert, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException {
 		log.debug(Channel.TECH, "Presigning document using parameters %1$s", parameters);
 		PresignReturn retour = null;
 		try {
-			PdfStamper stp = prepareSign(original_pdf, null, tmpFile, signerCert, parameters);
+			PdfStamper stp = prepareSign(original_pdf, output_pdf, tmpFile, signerCert, parameters);
 			PdfSignatureAppearance sap = stp.getSignatureAppearance();
 			
-			retour = new PresignReturn(sap.getRangeStream(), sap.getFieldName());
+			retour = new PresignReturn(sap.getRangeStream(), sap.getFieldName(), sap);
 			String dataHashAlgo = parameters.getDataHashAlgorithm();
 			if(dataHashAlgo!=null) {
 				// TODO : raise a wrong usage exception when dataHashAlgo==null && tmpFile!=null
@@ -277,27 +276,36 @@ public class PDFSign {
 		return retour;
 	}
 	public static PresignReturn preSign(InputStream original_pdf, Certificate signerCert, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException {
-		try {
-			log.debug(Channel.TECH, "preSign for normal size pdf");
-			PdfReader reader = new PdfReader(original_pdf);
-			return preSign(reader, null, signerCert, crls, ocspResponseEncoded, parameters);
-		} catch (Exception e) {
-			ExceptionHandler.handle(e);
-		}
-		return null;
+	    return preSign(original_pdf, null, signerCert, crls, ocspResponseEncoded, parameters);
 	}
 	
 	//Use for large PDF
 	public static PresignReturn preSign(String original_pdf_name, File tmpFile, Certificate signerCert, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException {
-		try {
-			log.debug(Channel.TECH, "preSign for large size pdf");
-			PdfReader reader = new PdfReader(new RandomAccessFileOrArray(original_pdf_name), null);
-			return preSign(reader, tmpFile, signerCert, crls, ocspResponseEncoded, parameters);
-		} catch (Exception e) {
-			ExceptionHandler.handle(e);
-		}
-		return null;
+		return preSign(original_pdf_name, null, tmpFile, signerCert, crls, ocspResponseEncoded, parameters);
 	}
+	
+	public static PresignReturn preSign(InputStream original_pdf, OutputStream output_pdf, Certificate signerCert, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException {
+        try {
+            log.debug(Channel.TECH, "preSign for normal size pdf");
+            PdfReader reader = new PdfReader(original_pdf);
+            return preSign(reader, output_pdf, null, signerCert, crls, ocspResponseEncoded, parameters);
+        } catch (Exception e) {
+            ExceptionHandler.handle(e);
+        }
+        return null;
+    }
+    
+    //Use for large PDF
+    public static PresignReturn preSign(String original_pdf_name, OutputStream output_pdf, File tmpFile, Certificate signerCert, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException {
+        try {
+            log.debug(Channel.TECH, "preSign for large size pdf");
+            PdfReader reader = new PdfReader(new RandomAccessFileOrArray(original_pdf_name), null);
+            return preSign(reader, output_pdf, tmpFile, signerCert, crls, ocspResponseEncoded, parameters);
+        } catch (Exception e) {
+            ExceptionHandler.handle(e);
+        }
+        return null;
+    }
 	/****************** END PRESIGN METHODS ************************/
 
 	/****************** BEGIN PRESIGNFORRAWSIGNATURE METHODS ************************/
@@ -541,6 +549,15 @@ public class PDFSign {
 		}
 		return null;
 	}
+	
+	public static SignReturn signAfterPresignWithEncodedP7(PdfSignatureAppearance sap, byte[] encodedPkcs7, Certificate signerCert, CRL[] crls, OCSPResponse[] ocspResponseEncoded, PdfSignParameters parameters) throws SPIException {
+        try {
+            return signAfterPresignWithEncodedP7(sap, encodedPkcs7, parameters, null);
+        } catch (Exception e) {
+            ExceptionHandler.handle(e);
+        }
+        return null;
+    }
 
 	/****************** END signAfterPresignWithEncodedP7 METHODS ************************/
 
@@ -1140,7 +1157,7 @@ public class PDFSign {
 		PdfSignatureAppearance sap = stp.getSignatureAppearance();
 		String signatureName = parameters.getSignatureName();
 		
-		if(org.apache.commons.lang.StringUtils.isBlank(signatureName)) 
+		if(signatureName != null && signatureName.length() == 0) 
 			signatureName = null;
 		
 		if(signatureName!=null) {
@@ -1270,11 +1287,11 @@ public class PDFSign {
 		// be used when "it is not possible to extract the name from the
 		// signature" (PDF reference), which is not the case here
 		//if (!StringHelper.isNullOrEmpty(location))
-		if (StringUtils.isNotEmpty(location))
+		if (location != null && location.length() > 0)
 			dic.put(PdfName.LOCATION, new PdfString(location, PdfObject.TEXT_UNICODE)); // sap.setLocation doesn't work if a criptodictionary is specified
-		if (StringUtils.isNotEmpty(reason))
+		if (reason != null && reason.length() > 0)
 			dic.put(PdfName.REASON, new PdfString(reason, PdfObject.TEXT_UNICODE)); // sap.setReason doesn't work if a criptodictionary is specified
-		if (StringUtils.isNotEmpty(contact))
+		if (contact != null && contact.length() > 0)
 			dic.put(PdfName.CONTACTINFO, new PdfString(contact, PdfObject.TEXT_UNICODE)); // sap.setContact doesn't work if a criptodictionary is specified
 
 			PdfDictionary buildDic = new PdfDictionary();
@@ -1379,12 +1396,17 @@ public class PDFSign {
 		private InputStream dataToSign;
 		private String signatureName;
 		private byte[] hashToSign;
+		private PdfSignatureAppearance pdfSignatureAppearance;
 		
 		public PresignReturn(InputStream dataToSign, String signatureName) {
-			super();
-			this.dataToSign = dataToSign;
-			this.signatureName = signatureName;
+		    this(dataToSign, signatureName, null);
 		}
+		public PresignReturn(InputStream dataToSign, String signatureName, PdfSignatureAppearance pdfSignatureAppearance) {
+            super();
+            this.dataToSign = dataToSign;
+            this.signatureName = signatureName;
+            this.pdfSignatureAppearance = pdfSignatureAppearance;
+        }
 		public InputStream getDataToSign() {
 			return dataToSign;
 		}
@@ -1397,6 +1419,9 @@ public class PDFSign {
 		public void setHashToSign(byte[] hashToSign) {
 			this.hashToSign = hashToSign;
 		}
+		public PdfSignatureAppearance getPdfSignatureAppearance() {
+            return pdfSignatureAppearance;
+        }
 	}
 	
 	public static class PresignReturnForRawSignature {

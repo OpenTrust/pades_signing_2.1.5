@@ -6,12 +6,12 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-import org.apache.commons.lang.time.DateUtils;
 import org.bouncycastle.x509.X509AttributeCertificate;
 
 import com.keynectis.sequoia.security.clients.interfaces.IOCSPClient;
 import com.keynectis.sequoia.security.clients.interfaces.ITspClient;
 import com.opentrust.spi.cms.CMSForPAdESEnhancedGenerator.PolicyIdentifierParams;
+import com.opentrust.spi.helpers.DateHelper;
 import com.spilowagie.text.pdf.PdfName;
 import com.spilowagie.text.pdf.PdfSignatureAppearance;
 
@@ -186,7 +186,7 @@ public class PdfSignParameters {
 		this.keepPDFACompliance = keepPDFACompliance;
 		this.dataHashAlgorithm = dataHashAlgorithm;
 		//Stripping signingTime of its milliseconds, not used by CMS signingTime field format and which could lead to signature corruption
-		this.signingTime = DateUtils.round(signingTime, Calendar.SECOND);
+		this.signingTime = DateHelper.round(signingTime, Calendar.SECOND);
 	}
 
 	public SignatureLayoutParameters getSignatureLayoutParameters() {
