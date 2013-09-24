@@ -584,12 +584,6 @@ public class PdfSignParameters {
 			this.fontColor = fontColor;
 		}
 
-		/**
-		 * @deprecated  replace with equivalent without 'statusText', which is not used anymore
-		 */
-		@Deprecated public static SignatureLayoutParameters getLayoutParametersForNewSign(float x1, float y1, float x2, float y2, int pageNbr, String description, byte[] backgroundImage, float backgroundImageScale, int runDirection, String statusText, int sigRenderMode, byte[] signatureImage, int fontFamily, int fontStyle, float fontSize, Color fontColor) {
-			return new SignatureLayoutParameters(x1, y1, x2, y2, pageNbr, description, backgroundImage, backgroundImageScale, runDirection, sigRenderMode, signatureImage, fontFamily, fontStyle, fontSize, fontColor);
-		}
 		public static SignatureLayoutParameters getLayoutParametersForNewSign(float x1, float y1, float x2, float y2, int pageNbr, String description, byte[] backgroundImage, float backgroundImageScale, int runDirection, int sigRenderMode, byte[] signatureImage, int fontFamily, int fontStyle, float fontSize, Color fontColor) {
 			return new SignatureLayoutParameters(x1, y1, x2, y2, pageNbr, description, backgroundImage, backgroundImageScale, runDirection, sigRenderMode, signatureImage, fontFamily, fontStyle, fontSize, fontColor);
 		}
@@ -599,12 +593,6 @@ public class PdfSignParameters {
 			return new SignatureLayoutParameters(x1, y1, x2, y2, pageNbr, description, null, 0, 0, SignatureRenderDescription , null, -1, -1, -1F, null);
 		}
 
-		/**
-		 * @deprecated  replace with equivalent without 'statusText', which is not used anymore
-		 */
-		@Deprecated public static SignatureLayoutParameters getLayoutParametersForAlreadyExistingSign(String description, byte[] backgroundImage, float backgroundImageScale, int runDirection, String statusText, int sigRenderMode, byte[] signatureImage, int fontFamily, int fontStyle, float fontSize, Color fontColor) {
-			return new SignatureLayoutParameters(0, 0, 0, 0, 0, description, backgroundImage, backgroundImageScale, runDirection, sigRenderMode, signatureImage, fontFamily, fontStyle, fontSize, fontColor);
-		}
 		public static SignatureLayoutParameters getLayoutParametersForAlreadyExistingSign(String description, byte[] backgroundImage, float backgroundImageScale, int runDirection, int sigRenderMode, byte[] signatureImage, int fontFamily, int fontStyle, float fontSize, Color fontColor) {
 			return new SignatureLayoutParameters(0, 0, 0, 0, 0, description, backgroundImage, backgroundImageScale, runDirection, sigRenderMode, signatureImage, fontFamily, fontStyle, fontSize, fontColor);
 		}
