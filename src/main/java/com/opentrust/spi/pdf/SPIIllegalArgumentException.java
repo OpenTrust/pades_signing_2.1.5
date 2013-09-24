@@ -2,9 +2,16 @@ package com.opentrust.spi.pdf;
 
 public class SPIIllegalArgumentException extends SPIException {
 
-	public SPIIllegalArgumentException(String string, Object... objects) {
+	/**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+
+    public SPIIllegalArgumentException(String string, Object... objects) {
 		super(string, objects);
-		// TODO Auto-generated constructor stub
 	}
 
+    public SPIIllegalArgumentException(Throwable cause, String string, Object... objects) {
+        super(cause, string, objects);
+    }
 }

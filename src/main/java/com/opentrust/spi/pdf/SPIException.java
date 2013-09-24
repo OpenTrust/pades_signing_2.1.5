@@ -11,8 +11,12 @@ public class SPIException extends Exception {
 	public SPIException(String string, Object...objects) {
 		this.format = string;
 		this.objects = objects;
-
 	}
+	public SPIException(Throwable cause, String string, Object...objects) {
+	    super(cause);
+        this.format = string;
+        this.objects = objects;
+    }
 	@Override
 	public String getMessage() {
 		return String.format(format, objects);
