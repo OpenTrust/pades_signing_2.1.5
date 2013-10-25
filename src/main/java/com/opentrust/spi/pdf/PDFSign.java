@@ -51,7 +51,6 @@ import com.opentrust.spi.crypto.CertificateHelper;
 import com.opentrust.spi.crypto.CryptoConstants.AlgorithmID;
 import com.opentrust.spi.crypto.DigestHelper;
 import com.opentrust.spi.crypto.ExceptionHandler;
-
 import com.opentrust.spi.logger.Channel;
 import com.opentrust.spi.logger.SPILogger;
 import com.opentrust.spi.pdf.PdfSignParameters.OCSPParameters;
@@ -60,6 +59,7 @@ import com.opentrust.spi.pdf.PdfSignParameters.SignatureLayoutParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.TimestampingParameters;
 import com.opentrust.spi.tsp.TimeStampProcessor;
 import com.opentrust.spi.tsp.TimestampToken;
+import com.spilowagie.text.DocumentException;
 import com.spilowagie.text.Font;
 import com.spilowagie.text.FontFactory;
 import com.spilowagie.text.Image;
@@ -1445,4 +1445,20 @@ public class PDFSign {
 			return encodedPkcs7WithoutSignature;
 		}
 	}
+	
+    /**
+     * Flatten a PDF document (convert cryptographic signature field into flat image).
+     * 
+     * @param pdfIs input stream containing the PDF document. The Stream is read to the end but not closed.
+     * @param flattenPdfOs output stream containing the flattened PDF document
+     * @throws IOException
+     * @throws DocumentException
+     */
+    public static void flattenPdf(InputStream pdfIs, OutputStream flattenPdfOs) throws IOException, DocumentException {
+        PdfReader pdfReader = new PdfReader(pdfIs);
+        PdfStamper pdfStamper = new PdfStamper(pdfReader, flattenPdfOs);
+        pdfStamper.setFormFlattening(true);
+        pdfStamper.close();
+        pdfReader.close();
+    }
 }
