@@ -1218,8 +1218,15 @@ public class PDFSign {
 			sap.setRunDirection(signatureLayoutParameters.getRunDirection());
 
 			byte[] backgroundImage = signatureLayoutParameters.getBackgroundImage();
-			if(backgroundImage!=null) {
-				sap.setImage(Image.getInstance(backgroundImage));
+			if(backgroundImage!=null && backgroundImage.length > 0) {
+			    Image itextBackgroundImage;
+			    try {
+			        itextBackgroundImage = Image.getInstance(backgroundImage);
+			    }
+			    catch (Exception e) {
+			        throw new SPIIllegalDataException("Failed parsing PDF background image: "+e.getMessage(), e);
+			    }
+				sap.setImage(itextBackgroundImage);
 				sap.setImageScale(signatureLayoutParameters.getBackgroundImageScale());
 			}
 			
@@ -1227,8 +1234,15 @@ public class PDFSign {
 			byte[] signatureImage = null;
 			if(sigRenderMode==PdfSignatureAppearance.SignatureRenderGraphicAndDescription) {
 				signatureImage = signatureLayoutParameters.getSignatureImage();
-				if(signatureImage!=null) {
-					sap.setSignatureGraphic(Image.getInstance(signatureImage));
+				if(signatureImage!=null && signatureImage.length > 0) {
+				    Image itextImage;
+	                try {
+	                    itextImage = Image.getInstance(signatureImage);
+	                }
+	                catch (Exception e) {
+	                    throw new SPIIllegalDataException("Failed parsing PDF signature image: "+e.getMessage(), e);
+	                }
+					sap.setSignatureGraphic(itextImage);
 				} else throw new SPIIllegalDataException("Cannot use graphic+description signature render mode without providing a graphic");
 			} else if(sigRenderMode==PdfSignatureAppearance.SignatureRenderNameAndDescription) {
 				if(signerCert==null) throw new SPIIllegalArgumentException("Cannot use name+description signature render mode without providing the signer certificate");
