@@ -682,8 +682,8 @@ public class PDFSign {
 		TimestampingParameters tsParams = timeStampParams;
 
 		CMSSignedDataWrapper cmsSignature = new CMSSignedDataWrapper(encodedPkcs7);
-		PDFEnvelopedSignature.addTSToCMS(cmsSignature, tsParams.getTimeStampDigestAlgo(), tspClient);
-		return new SignResult(cmsSignature.getEncoded(), null);
+		TimestampToken timeStampToken = PDFEnvelopedSignature.addTSToCMS(cmsSignature, tsParams.getTimeStampDigestAlgo(), tspClient);
+		return new SignResult(cmsSignature.getEncoded(), timeStampToken);
 	}
 	
 	/****************** END cms_sign METHODS ************************/
