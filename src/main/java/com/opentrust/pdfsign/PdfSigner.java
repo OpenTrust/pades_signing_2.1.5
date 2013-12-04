@@ -218,11 +218,11 @@ public class PdfSigner extends DocumentSigner {
 		
 		PdfDocument pdf = (PdfDocument) doc;
 		
-		
 		SignReturn newPDF = PDFSign.sign(null, pdf.reader, os, 
 				null, (PrivateKey) getSigningKey(), getSigningChainArray(),
-				getCrls(), getOcspResponses(), getSignatureParameters());	
+				getCrls(), getOcspResponses(), getSignatureParameters());
 		
+		//TODO return signature properties
 	}
 	
 	@Override
