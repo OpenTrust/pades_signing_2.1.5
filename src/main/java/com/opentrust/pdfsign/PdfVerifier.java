@@ -44,7 +44,7 @@ public class PdfVerifier extends DocumentVerifier {
     }
 
     
-    public List<PdfValidationResult> verify(PdfDocument document) throws SignatureException {
+    public List<PdfValidationResult> verify(PdfDocument document) throws Exception {
         //FIXME
         signatureType = "PADES-BASIC";
         ArrayList<PdfValidationResult> result = new ArrayList<PdfValidationResult>();
@@ -62,7 +62,7 @@ public class PdfVerifier extends DocumentVerifier {
         		for (int i=0 ; i<includedCerts.length ; i++)
         			list[i] = (X509Certificate) includedCerts[i];
 			}
-        	try {
+
         		TimestampToken timestampToken = signatureVerifResult.getTimestampToken();
         		LongTermValidationInfos ltvInfos = null;
         		if (timestampToken != null)
@@ -91,9 +91,7 @@ public class PdfVerifier extends DocumentVerifier {
         		}
         		
         		current.validation = signingCertificateTruststore.validate(signatureVerifResult.getSigningCertificate(), ltvInfos, list);
-			} catch (Exception e) {
-				throw new SignatureException("Failed signature validation", e);
-			}
+
         }
         return result;
     }
