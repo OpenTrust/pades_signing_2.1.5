@@ -44,23 +44,26 @@ public class PdfVerifier extends DocumentVerifier {
     }
 
     
-    public List<PdfValidationResult> verify(PdfDocument document, String signatureName) throws SignatureException {
+    public List<PdfValidationResult> verify(PdfDocument document) throws SignatureException {
         //FIXME
         signatureType = "PADES-BASIC";
         ArrayList<PdfValidationResult> result = new ArrayList<PdfValidationResult>();
         List<PDFEnvelopedSignature> verifResults = PDFVerifSignature.verify(document.reader);
-        for (PDFEnvelopedSignature signature : verifResults)
+        for (PDFEnvelopedSignature signatureVerifResult : verifResults)
         {
         	PdfValidationResult current = new PdfValidationResult();
-        	current.signature = signature;
+        	result.add(current);
+        	current.signature = signatureVerifResult;
 			X509Certificate [] list = null;
-        	Certificate[] includedCerts = signature.getCertificates();
+        	Certificate[] includedCerts = signatureVerifResult.getCertificates();
         	if (includedCerts != null && includedCerts.length > 0)
 			{
         		list = new X509Certificate[includedCerts.length];
+        		for (int i=0 ; i<includedCerts.length ; i++)
+        			list[i] = (X509Certificate) includedCerts[i];
 			}
         	try {
-        		TimestampToken timestampToken = signature.getTimestampToken();
+        		TimestampToken timestampToken = signatureVerifResult.getTimestampToken();
         		LongTermValidationInfos ltvInfos = null;
         		if (timestampToken != null)
         		{
@@ -68,7 +71,7 @@ public class PdfVerifier extends DocumentVerifier {
         			ltvInfos.timeStampDate = timestampToken.getDateTime();
         			ltvInfos.tspCertificate = (X509Certificate) timestampToken.getSignerCertificate();
         			
-            		Collection<OCSPResponse> ocspResponses = signature.getOcspResponses();
+            		Collection<OCSPResponse> ocspResponses = signatureVerifResult.getOcspResponses();
             		ArrayList<BasicOCSPResp> ocspList = new ArrayList<BasicOCSPResp>();
             		for (OCSPResponse resp : ocspResponses)
             		{
@@ -78,7 +81,7 @@ public class PdfVerifier extends DocumentVerifier {
             		}
             		ltvInfos.ocspResponse = ocspList.toArray(new BasicOCSPResp[] {});
 
-            		Collection<X509CRL> crLs = signature.getCRLs();
+            		Collection<X509CRL> crLs = signatureVerifResult.getCRLs();
             		ArrayList<X509CRL> crlList = new ArrayList<X509CRL>();
             		for (X509CRL crl : crLs)
             		{
@@ -87,7 +90,7 @@ public class PdfVerifier extends DocumentVerifier {
             		ltvInfos.crls = crlList.toArray(new X509CRL[] {});
         		}
         		
-        		current.validation = signingCertificateTruststore.validate(signature.getSigningCertificate(), list, ltvInfos);
+        		current.validation = signingCertificateTruststore.validate(signatureVerifResult.getSigningCertificate(), ltvInfos, list);
 			} catch (Exception e) {
 				throw new SignatureException("Failed signature validation", e);
 			}
