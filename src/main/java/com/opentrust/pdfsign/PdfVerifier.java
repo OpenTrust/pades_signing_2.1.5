@@ -35,6 +35,16 @@ public class PdfVerifier extends DocumentVerifier {
 		{
 			return pdfValidation && trustValidationResult.valid;
 		}
+		
+		public String getSignatureName()
+		{
+			return signature.getSignatureFieldName();
+		}
+		
+		public X509Certificate getSignatureCertificate()
+		{
+			return trustValidationResult.tree.finalNode.entry.cert;
+		}
 	}
 	
     private List<SignatureAlgorithm> acceptableSignatureAlgorithms = null;
