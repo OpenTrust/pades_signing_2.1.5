@@ -29,7 +29,7 @@ public class VerifierTest {
 		List<PdfValidationResult> verify = verifier.verify(doc);
 		for (PdfValidationResult result : verify)
 		{
-			System.out.println(result.validation.valid);
+			System.out.println(result.trustValidationResult.valid);
 		}
 	}
 

@@ -27,8 +27,8 @@ public class PdfVerifier extends DocumentVerifier {
     
 	public static class PdfValidationResult
 	{
-		public PDFEnvelopedSignature signature;
-		public ValidationResult validation;
+		public PDFEnvelopedSignature signatureVerificationResult;
+		public ValidationResult trustValidationResult;
 	}
 	
     private List<SignatureAlgorithm> acceptableSignatureAlgorithms = null;
@@ -53,7 +53,7 @@ public class PdfVerifier extends DocumentVerifier {
         {
         	PdfValidationResult current = new PdfValidationResult();
         	result.add(current);
-        	current.signature = signatureVerifResult;
+        	current.signatureVerificationResult = signatureVerifResult;
 			X509Certificate [] list = null;
         	Certificate[] includedCerts = signatureVerifResult.getCertificates();
         	if (includedCerts != null && includedCerts.length > 0)
@@ -90,7 +90,7 @@ public class PdfVerifier extends DocumentVerifier {
             		ltvInfos.crls = crlList.toArray(new X509CRL[] {});
         		}
         		
-        		current.validation = signingCertificateTruststore.validate(signatureVerifResult.getSigningCertificate(), ltvInfos, list);
+        		current.trustValidationResult = signingCertificateTruststore.validate(signatureVerifResult.getSigningCertificate(), ltvInfos, list);
 
         }
         return result;
