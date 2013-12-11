@@ -2,11 +2,18 @@ package com.opentrust.pdfsign;
 
 import java.security.SignatureException;
 import java.security.cert.Certificate;
+import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.bouncycastle.asn1.esf.OcspResponsesID;
+import org.bouncycastle.asn1.ocsp.BasicOCSPResponse;
+import org.bouncycastle.ocsp.BasicOCSPResp;
+import org.bouncycastle.ocsp.OCSPResp;
+
+import com.keynectis.sequoia.ca.crypto.truststore.LongTermValidationInfos;
 import com.keynectis.sequoia.ca.crypto.truststore.Truststore.ValidationResult;
 import com.keynectis.sequoia.security.signeddocument.DocumentVerifier;
 import com.keynectis.sequoia.security.xml.dsig.SignatureAlgorithm;
@@ -53,11 +60,34 @@ public class PdfVerifier extends DocumentVerifier {
         		list = new X509Certificate[includedCerts.length];
 			}
         	try {
-        		Collection<OCSPResponse> ocspResponses = signature.getOcspResponses();
-        		Collection crLs = signature.getCRLs();
         		TimestampToken timestampToken = signature.getTimestampToken();
+        		LongTermValidationInfos ltvInfos = null;
+        		if (timestampToken != null)
+        		{
+        			ltvInfos = new LongTermValidationInfos();
+        			ltvInfos.timeStampDate = timestampToken.getDateTime();
+        			ltvInfos.tspCertificate = (X509Certificate) timestampToken.getSignerCertificate();
+        			
+            		Collection<OCSPResponse> ocspResponses = signature.getOcspResponses();
+            		ArrayList<BasicOCSPResp> ocspList = new ArrayList<BasicOCSPResp>();
+            		for (OCSPResponse resp : ocspResponses)
+            		{
+            			 OCSPResp bcResp = new OCSPResp(resp.getEncoded());
+            			 BasicOCSPResp basicResp = (BasicOCSPResp) bcResp.getResponseObject();
+            			 ocspList.add(basicResp);
+            		}
+            		ltvInfos.ocspResponse = ocspList.toArray(new BasicOCSPResp[] {});
+
+            		Collection<X509CRL> crLs = signature.getCRLs();
+            		ArrayList<X509CRL> crlList = new ArrayList<X509CRL>();
+            		for (X509CRL crl : crLs)
+            		{
+            			crlList.add(crl);
+            		}
+            		ltvInfos.crls = crlList.toArray(new X509CRL[] {});
+        		}
         		
-        		current.validation = signingCertificateTruststore.validate(signature.getSigningCertificate(), list);
+        		current.validation = signingCertificateTruststore.validate(signature.getSigningCertificate(), list, ltvInfos);
 			} catch (Exception e) {
 				throw new SignatureException("Failed signature validation", e);
 			}
