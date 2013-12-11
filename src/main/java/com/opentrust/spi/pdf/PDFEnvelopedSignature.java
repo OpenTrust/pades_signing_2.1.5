@@ -106,6 +106,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.provider.X509CertParser;
 import org.bouncycastle.tsp.TSPException;
 import org.bouncycastle.tsp.TimeStampResponse;
+import org.bouncycastle.tsp.TimeStampToken;
 
 import com.keynectis.sequoia.security.clients.interfaces.ITspClient;
 import com.opentrust.spi.cms.CMSForPAdESBasicGenerator;
@@ -167,6 +168,8 @@ public class PDFEnvelopedSignature {
  
     private static final String ID_RSA = AlgorithmID.KEY_RSA.getOID();
     private static final String ID_DSA = "1.2.840.10040.4.1";
+
+	private static final int GRANTED = 0;
 
     /**
      * properties from PDF signature dictionary (M, Location, Reason, ContactInfo)
@@ -494,10 +497,17 @@ public class PDFEnvelopedSignature {
 			byte [] fullresponse = tspClient.getRawTsp(digest, algoId);
 
 			TimeStampResponse response = new TimeStampResponse(fullresponse);
-			tsResponse = response.getTimeStampToken().getEncoded();
+			int status = response.getStatus();
+			if (status == GRANTED)
+			{
+				TimeStampToken tspValue = response.getTimeStampToken();
+				tsResponse = tspValue.getEncoded();
+			}
+			else
+				throw new RuntimeException("Timestamping failure, status " + status + ", " + response.getStatusString());
 			
 		} catch (Exception e) {
-			throw new RuntimeException("Error getting timestamp", e);
+			throw new RuntimeException("Error getting timestamp from " + tspClient.getSource(), e);
 		}
 	   	TimestampToken timestampToken = new BCTimeStampToken(tsResponse);
 	   	cmsSignature.appendSignatureTimeStamp(timestampToken.getEncoded());

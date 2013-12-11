@@ -109,7 +109,7 @@ public class PDFVerifSignature {
 		return verifResult;
 	}
 
-	protected static List<PDFEnvelopedSignature> verify(PdfReader reader){
+	public static List<PDFEnvelopedSignature> verify(PdfReader reader){
 		return verify(reader, false);
 	}
 	
