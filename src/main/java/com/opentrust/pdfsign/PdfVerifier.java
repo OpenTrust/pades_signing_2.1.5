@@ -31,6 +31,7 @@ public class PdfVerifier extends DocumentVerifier {
 		public PDFEnvelopedSignature signature;
 		public ValidationResult trustValidationResult;
 		public boolean containsRequiredAC = true;
+		public String missingCa;
 		
 		public boolean isValid()
 		{
@@ -112,7 +113,14 @@ public class PdfVerifier extends DocumentVerifier {
     		current.trustValidationResult = signingCertificateTruststore.validate(signatureVerifResult.getSigningCertificate(), ltvInfos, list);
     		X509Certificate []requiredCa = getAcceptedCACertificates();
     		if (requiredCa != null)
-    			current.containsRequiredAC = current.trustValidationResult.treeContains(requiredCa);
+    		{
+    			List<X509Certificate> missingCA = current.trustValidationResult.treeContains(requiredCa);
+    			current.containsRequiredAC = (missingCA.size() == 0);
+    			StringBuilder sb = new StringBuilder();
+    			for (X509Certificate missingCert : missingCA)
+    				sb.append(missingCert.getSubjectX500Principal().toString()+";");
+    			current.missingCa = sb.toString();
+    		}
     		
         }
         return result;
