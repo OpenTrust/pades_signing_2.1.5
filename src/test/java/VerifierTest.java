@@ -1,9 +1,11 @@
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.Security;
+import java.security.cert.X509Certificate;
 import java.util.List;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.keynectis.sequoia.ca.crypto.truststore.Truststore;
@@ -25,12 +27,10 @@ public class VerifierTest {
 		PdfDocument doc = loadPdf("pdfWithTimestampGoodOCSPRevokedCertificate.pdf");
 		PdfVerifier verifier = new PdfVerifier();
 		verifier.setSigningCertTrustPointValidationParams(truststore);
-		
+		verifier.setAcceptedCACertificates(new X509Certificate[] {ACCertificates.fille11});
 		List<PdfValidationResult> verify = verifier.verify(doc);
 		for (PdfValidationResult result : verify)
-		{
-			System.out.println(result.isValid());
-		}
+			Assert.assertTrue(result.isValid());
 	}
 
 	public static PdfDocument loadPdf(String fileName) throws IOException {

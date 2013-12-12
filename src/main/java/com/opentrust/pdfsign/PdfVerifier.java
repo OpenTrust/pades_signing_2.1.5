@@ -30,10 +30,11 @@ public class PdfVerifier extends DocumentVerifier {
 		public boolean pdfValidation;
 		public PDFEnvelopedSignature signature;
 		public ValidationResult trustValidationResult;
+		public boolean containsRequiredAC = true;
 		
 		public boolean isValid()
 		{
-			return pdfValidation && trustValidationResult.valid;
+			return pdfValidation && trustValidationResult.valid && containsRequiredAC;
 		}
 		
 		public String getSignatureName()
@@ -81,35 +82,38 @@ public class PdfVerifier extends DocumentVerifier {
         			list[i] = (X509Certificate) includedCerts[i];
 			}
 
-        		TimestampToken timestampToken = signatureVerifResult.getTimestampToken();
-        		LongTermValidationInfos ltvInfos = null;
-        		if (timestampToken != null)
+    		TimestampToken timestampToken = signatureVerifResult.getTimestampToken();
+    		LongTermValidationInfos ltvInfos = null;
+    		if (timestampToken != null)
+    		{
+    			ltvInfos = new LongTermValidationInfos();
+    			ltvInfos.timeStampDate = timestampToken.getDateTime();
+    			ltvInfos.tspCertificate = (X509Certificate) timestampToken.getSignerCertificate();
+    			
+        		Collection<OCSPResponse> ocspResponses = signatureVerifResult.getOcspResponses();
+        		ArrayList<BasicOCSPResp> ocspList = new ArrayList<BasicOCSPResp>();
+        		for (OCSPResponse resp : ocspResponses)
         		{
-        			ltvInfos = new LongTermValidationInfos();
-        			ltvInfos.timeStampDate = timestampToken.getDateTime();
-        			ltvInfos.tspCertificate = (X509Certificate) timestampToken.getSignerCertificate();
-        			
-            		Collection<OCSPResponse> ocspResponses = signatureVerifResult.getOcspResponses();
-            		ArrayList<BasicOCSPResp> ocspList = new ArrayList<BasicOCSPResp>();
-            		for (OCSPResponse resp : ocspResponses)
-            		{
-            			 OCSPResp bcResp = new OCSPResp(resp.getEncoded());
-            			 BasicOCSPResp basicResp = (BasicOCSPResp) bcResp.getResponseObject();
-            			 ocspList.add(basicResp);
-            		}
-            		ltvInfos.ocspResponse = ocspList.toArray(new BasicOCSPResp[] {});
-
-            		Collection<X509CRL> crLs = signatureVerifResult.getCRLs();
-            		ArrayList<X509CRL> crlList = new ArrayList<X509CRL>();
-            		for (X509CRL crl : crLs)
-            		{
-            			crlList.add(crl);
-            		}
-            		ltvInfos.crls = crlList.toArray(new X509CRL[] {});
+        			 OCSPResp bcResp = new OCSPResp(resp.getEncoded());
+        			 BasicOCSPResp basicResp = (BasicOCSPResp) bcResp.getResponseObject();
+        			 ocspList.add(basicResp);
         		}
-        		
-        		current.trustValidationResult = signingCertificateTruststore.validate(signatureVerifResult.getSigningCertificate(), ltvInfos, list);
+        		ltvInfos.ocspResponse = ocspList.toArray(new BasicOCSPResp[] {});
 
+        		Collection<X509CRL> crLs = signatureVerifResult.getCRLs();
+        		ArrayList<X509CRL> crlList = new ArrayList<X509CRL>();
+        		for (X509CRL crl : crLs)
+        		{
+        			crlList.add(crl);
+        		}
+        		ltvInfos.crls = crlList.toArray(new X509CRL[] {});
+    		}
+    		
+    		current.trustValidationResult = signingCertificateTruststore.validate(signatureVerifResult.getSigningCertificate(), ltvInfos, list);
+    		X509Certificate []requiredCa = getAcceptedCACertificates();
+    		if (requiredCa != null)
+    			current.containsRequiredAC = current.trustValidationResult.treeContains(requiredCa);
+    		
         }
         return result;
     }
