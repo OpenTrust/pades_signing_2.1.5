@@ -28,9 +28,16 @@ public class VerifierTest {
 		PdfVerifier verifier = new PdfVerifier();
 		verifier.setSigningCertTrustPointValidationParams(truststore);
 		verifier.setAcceptedCACertificates(new X509Certificate[] {ACCertificates.fille11});
-		List<PdfValidationResult> verify = verifier.verify(doc);
+		List<PdfValidationResult> verify = verifier.verify(doc, "Signature1");
 		for (PdfValidationResult result : verify)
+		{
+			System.out.println(result.getSignatureName() + " : " + result.isValid());
 			Assert.assertTrue(result.isValid());
+		}
+		List<PdfValidationResult> missingverify = verifier.verify(doc, "Signature1234");
+		Assert.assertTrue(missingverify.size() == 0);
+
+		
 	}
 
 	public static PdfDocument loadPdf(String fileName) throws IOException {

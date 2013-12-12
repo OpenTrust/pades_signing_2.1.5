@@ -61,14 +61,34 @@ public class PdfVerifier extends DocumentVerifier {
         this.padesConformanceLevel = level;
     }
 
-    
-    public List<PdfValidationResult> verify(PdfDocument document) throws Exception {
+    /**
+     * Verify the validity of the pdf document
+     * - the format
+     * - the validity of the signature certificate
+     * @param document
+     * @param signatureNames : the list of signatures to verify, if null, all the signatures are verified
+     * @return
+     * @throws Exception
+     */
+    public List<PdfValidationResult> verify(PdfDocument document, String ...signatureNames) throws Exception {
         //FIXME
+    	ArrayList<String> signatureNameList = null;
+    	if (signatureNames != null && signatureNames.length > 0)
+    	{
+    		signatureNameList= new ArrayList<String>();
+        	for (String signatureName : signatureNames)
+        		signatureNameList.add(signatureName);
+        }
+    	
         signatureType = "PADES-BASIC";
         ArrayList<PdfValidationResult> result = new ArrayList<PdfValidationResult>();
         List<PDFEnvelopedSignature> verifResults = PDFVerifSignature.verify(document.reader);
         for (PDFEnvelopedSignature signatureVerifResult : verifResults)
         {
+        	String signatureFieldName = signatureVerifResult.getSignatureFieldName();
+        	if (signatureNameList != null && !signatureNameList.contains(signatureFieldName))
+        		continue;
+        		
         	PdfValidationResult current = new PdfValidationResult();
         	result.add(current);
         	current.signature = signatureVerifResult;
