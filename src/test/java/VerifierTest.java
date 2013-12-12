@@ -28,10 +28,17 @@ public class VerifierTest {
 		PdfVerifier verifier = new PdfVerifier();
 		verifier.setSigningCertTrustPointValidationParams(truststore);
 		verifier.setAcceptedCACertificates(new X509Certificate[] {ACCertificates.fille11});
-		List<PdfValidationResult> verify = verifier.verify(doc, "Signature1");
-		for (PdfValidationResult result : verify)
+		
+		List<PdfValidationResult> verifyAll = verifier.verify(doc);
+		for (PdfValidationResult result : verifyAll)
 		{
-			System.out.println(result.getSignatureName() + " : " + result.isValid());
+			Assert.assertTrue(result.isValid());
+		}
+		
+		List<PdfValidationResult> oneverify = verifier.verify(doc, "Signature1");
+		for (PdfValidationResult result : oneverify)
+		{
+			Assert.assertTrue(result.getSignatureName().equals("Signature1"));
 			Assert.assertTrue(result.isValid());
 		}
 		List<PdfValidationResult> missingverify = verifier.verify(doc, "Signature1234");
