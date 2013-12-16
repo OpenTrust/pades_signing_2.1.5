@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.PrivateKey;
 
-import org.bouncycastle.ocsp.BasicOCSPResp;
+import org.bouncycastle.ocsp.OCSPResp;
 
 import com.keynectis.sequoia.security.signeddocument.Document;
 import com.keynectis.sequoia.security.signeddocument.DocumentSigner;
@@ -175,15 +175,15 @@ public class PdfSigner extends DocumentSigner {
 
 	protected OCSPResponse [] getOcspResponses() throws IOException
 	{
-		BasicOCSPResp[] ocspList2 = getOcspList();
+		OCSPResp[] ocspList2 = getRawOcspList();
 		if (ocspList2 == null)
 			return null;
 		
 		OCSPResponse [] ret = new OCSPResponse[ocspList2.length];
 		
 		int i=0;
-		for (BasicOCSPResp bOcsp : ocspList2)
-			ret[i++] = new OCSPResponse(bOcsp);
+		for (OCSPResp bOcsp : ocspList2)
+			ret[i++] = new OCSPResponse(bOcsp.getEncoded());
 		
 		return ret;
 	}

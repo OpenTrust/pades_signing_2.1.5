@@ -1,4 +1,9 @@
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -7,7 +12,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.Signature;
@@ -32,20 +36,16 @@ import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
 import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.asn1.x509.X509Extensions;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.ocsp.BasicOCSPResp;
+import org.bouncycastle.ocsp.OCSPResp;
 import org.bouncycastle.tsp.TSPValidationException;
 import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
-import org.bouncycastle.util.io.Streams;
 import org.bouncycastle.x509.X509AttributeCertificate;
 import org.bouncycastle.x509.X509StreamParser;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 import com.keynectis.sequoia.ca.crypto.utils.PKCS12File;
-import com.keynectis.sequoia.core.io.FileUtil;
 import com.keynectis.sequoia.security.clients.interfaces.IOCSPClient;
 import com.keynectis.sequoia.security.clients.interfaces.ITspClient;
 import com.keynectis.sequoia.security.ocsp.StandaloneOCSP;
@@ -56,9 +56,6 @@ import com.opentrust.spi.cms.helpers.SignatureHelper;
 import com.opentrust.spi.crypto.CRLHelper;
 import com.opentrust.spi.crypto.CertificateHelper;
 import com.opentrust.spi.crypto.CryptoConstants.AlgorithmID;
-
-import com.opentrust.spi.logger.PrintStreamLogger;
-import com.opentrust.spi.logger.SPILogger;
 import com.opentrust.spi.pdf.PAdESHelper;
 import com.opentrust.spi.pdf.PDFEnvelopedSignature;
 import com.opentrust.spi.pdf.PDFSign;
@@ -70,7 +67,6 @@ import com.opentrust.spi.pdf.PDFSign.VRIData;
 import com.opentrust.spi.pdf.PDFSign.ValidationData;
 import com.opentrust.spi.pdf.PDFVerifSignature;
 import com.opentrust.spi.pdf.PdfSignParameters;
-import com.opentrust.spi.pdf.PdfSignParameters.OCSPParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.PAdESParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.SignatureLayoutParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.TimestampingParameters;
@@ -1066,8 +1062,8 @@ public class PDFSignTest {
 			OCSPResponse responseFresh = Responder.getOCSPResponse(ocspParams.getTargetCertificate(),
 					ocspParams.getIssuerCertificate());
 			*/
-			BasicOCSPResp status = ocspClient.getStatus(certToVerify, issuerCertificate);
-			OCSPResponse freshResponse = new OCSPResponse(status);
+			OCSPResp status = ocspClient.getRawStatus(certToVerify, issuerCertificate);
+			OCSPResponse freshResponse = new OCSPResponse(status.getEncoded());
 
 			OCSPResponse[] ocsp = new OCSPResponse[] { freshResponse };
 			assertNotNull(ocsp);

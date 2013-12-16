@@ -31,14 +31,12 @@ import javax.imageio.ImageIO;
 
 import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.ocsp.BasicOCSPResp;
+import org.bouncycastle.ocsp.OCSPResp;
 import org.bouncycastle.tsp.TimeStampResponse;
 import org.bouncycastle.util.encoders.Hex;
 
 import com.keynectis.sequoia.ca.crypto.utils.OIDUtils;
 import com.keynectis.sequoia.ca.crypto.utils.PKCS12File;
-import com.keynectis.sequoia.security.clients.OCSPClient;
-import com.keynectis.sequoia.security.clients.TspClient;
 import com.keynectis.sequoia.security.clients.interfaces.IOCSPClient;
 import com.keynectis.sequoia.security.clients.interfaces.ITspClient;
 import com.opentrust.spi.cms.CMSForPAdESBasicGenerator;
@@ -57,7 +55,6 @@ import com.opentrust.spi.pdf.PdfSignParameters.OCSPParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.PAdESParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.SignatureLayoutParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.TimestampingParameters;
-import com.opentrust.spi.tsp.TimeStampProcessor;
 import com.opentrust.spi.tsp.TimestampToken;
 import com.spilowagie.text.DocumentException;
 import com.spilowagie.text.Font;
@@ -395,7 +392,7 @@ public class PDFSign {
 			CMSSignedDataWrapper unsignedCmsSignature = new CMSSignedDataWrapper(encodedUnsignedPkcs7);
 			CRL[] crlList = null;
 			if (unsignedCmsSignature.getCRLs() != null)
-				crlList = (CRL[]) unsignedCmsSignature.getCRLs().toArray(new CRL[] {});
+				crlList = unsignedCmsSignature.getCRLs().toArray(new CRL[] {});
 			OCSPResponse[] ocspResponseEncoded = unsignedCmsSignature.getOCSPResponses().toArray(new OCSPResponse[] {});
 
 			String dataDigestAlgorithm = unsignedCmsSignature.getDataDigestAlgorithm();
@@ -589,7 +586,7 @@ public class PDFSign {
 			PdfSignParameters parameters, CRL[] crls, OCSPResponse[] ocspResponseEncoded) throws Exception {
 		KeyStore ks = KeyStore.getInstance("pkcs12");
 		ks.load(new FileInputStream(keyStoreFileName), password.toCharArray());
-		String ALIAS = (String) ks.aliases().nextElement();
+		String ALIAS = ks.aliases().nextElement();
 
 		java.security.cert.Certificate[] certChain = ks.getCertificateChain(ALIAS);
 		PrivateKey priv = (PrivateKey) (ks.getKey(ALIAS, password.toCharArray()));
@@ -611,9 +608,9 @@ public class PDFSign {
 		{
 			for (OCSPParameters ocspParams : ocspParamsList) {
 				log.debug(Channel.TECH, "Requests a new OCSP Response");
-				BasicOCSPResp status = parameters.ocspClient.getStatus((X509Certificate) ocspParams.getTargetCertificate(), 
+				OCSPResp status = parameters.ocspClient.getRawStatus((X509Certificate) ocspParams.getTargetCertificate(), 
 						(X509Certificate) ocspParams.getIssuerCertificate());
-				ocspResponses.add(new OCSPResponse(status));
+				ocspResponses.add(new OCSPResponse(status.getEncoded()));
 				/*
 				  OCSPResponder ocspResponder =
 				  ocspResponderManager.getOCSPResponder
@@ -702,10 +699,10 @@ public class PDFSign {
 		else if (ocspParamsList != null) {
 			for (OCSPParameters ocspParams : ocspParamsList) {
 				log.debug(Channel.TECH, "Requests a new OCSP Response");
-				BasicOCSPResp status = parameters.ocspClient.getStatus(
+				OCSPResp status = parameters.ocspClient.getRawStatus(
 						(X509Certificate) ocspParams.getTargetCertificate(),
 						(X509Certificate) ocspParams.getIssuerCertificate());
-				ocspResponses.add(new OCSPResponse(status));
+				ocspResponses.add(new OCSPResponse(status.getEncoded()));
 			}
 		}
 		String dataHashAlgorithm = parameters.getDataHashAlgorithm();
@@ -1022,7 +1019,8 @@ public class PDFSign {
 	}
 
 	public static class CertificateWithRevisionFactory implements ObjectWithRevisionAbstractFactory<CertificateWithRevision> {
-		public CertificateWithRevision createObjectWithRevision(byte[] octets, int revision) throws Exception {
+		@Override
+        public CertificateWithRevision createObjectWithRevision(byte[] octets, int revision) throws Exception {
 			Certificate cert = CertificateHelper.getCertificate(octets);
 			log.debug(Channel.TECH, "certificate found in dictionary");
 			return new CertificateWithRevision(cert, revision);
@@ -1030,7 +1028,8 @@ public class PDFSign {
 	}
 
 	public static class CRLWithRevisionFactory implements ObjectWithRevisionAbstractFactory<CRLWithRevision> {
-		public CRLWithRevision createObjectWithRevision(byte[] octets, int revision) throws Exception {
+		@Override
+        public CRLWithRevision createObjectWithRevision(byte[] octets, int revision) throws Exception {
 			CRL crl = CRLHelper.getCRL(octets);
 			log.debug(Channel.TECH, "CRL found in dictionary");
 			return new CRLWithRevision(crl, revision);
@@ -1038,7 +1037,8 @@ public class PDFSign {
 	}
 
 	public static class OCSPResponseWithRevisionFactory implements ObjectWithRevisionAbstractFactory<OCSPResponseWithRevision> {
-		public OCSPResponseWithRevision createObjectWithRevision(byte[] octets, int revision) throws Exception {
+		@Override
+        public OCSPResponseWithRevision createObjectWithRevision(byte[] octets, int revision) throws Exception {
 			//OCSPResponse ocsp = OCSPResponseFactory.getInstance().getOCSPResponse(octets);
 			OCSPResponse ocsp = new OCSPResponse(octets);
 			log.debug(Channel.TECH, "OCSP response found in dictionary");
@@ -1047,9 +1047,10 @@ public class PDFSign {
 	}
 
 	public static class CertificateWithRevision implements ObjectWithRevision {
-		private Certificate cert;
-		private int revision;
-		public int getRevision() {
+		private final Certificate cert;
+		private final int revision;
+		@Override
+        public int getRevision() {
 			return revision;
 		}
 		public Certificate getCertificate() {
@@ -1062,9 +1063,10 @@ public class PDFSign {
 	}
 	
 	public static class CRLWithRevision implements ObjectWithRevision {
-		private CRL crl;
-		private int revision;
-		public int getRevision() {
+		private final CRL crl;
+		private final int revision;
+		@Override
+        public int getRevision() {
 			return revision;
 		}
 		public CRL getCRL() {
@@ -1077,9 +1079,10 @@ public class PDFSign {
 	}
 
 	public static class OCSPResponseWithRevision implements ObjectWithRevision {
-		private OCSPResponse ocspR;
-		private int revision;
-		public int getRevision() {
+		private final OCSPResponse ocspR;
+		private final int revision;
+		@Override
+        public int getRevision() {
 			return revision;
 		}
 		public OCSPResponse getOCSPResponse() {
@@ -1173,7 +1176,7 @@ public class PDFSign {
 			AcroFields af = reader.getAcroFields();
 	        AcroFields.Item item = af.getFieldItem(signatureName);
 	        if (item == null) throw new SPIIllegalDataException("The field %1$s does not exist.",signatureName);
-	        PdfDictionary merged = (PdfDictionary)item.getMerged(0);
+	        PdfDictionary merged = item.getMerged(0);
 	        if(merged.get(PdfName.V)!=null) throw new SPIIllegalDataException("The field %1$s is not empty.",signatureName);
 	        
 	        sap.setVisibleSignature(signatureName);
@@ -1366,8 +1369,8 @@ public class PDFSign {
 	}
 	
 	public static class SignResult {
-		private byte[] encodedPkcs7;
-		private TimestampToken timestampToken;
+		private final byte[] encodedPkcs7;
+		private final TimestampToken timestampToken;
 		public SignResult(byte[] encodedPkcs7, TimestampToken timestampToken) {
 			this.encodedPkcs7 = encodedPkcs7;
 			this.timestampToken = timestampToken;
@@ -1381,9 +1384,9 @@ public class PDFSign {
 	}
 	
 	public static class SignReturn {
-		private TimestampToken timestampToken;
-		private byte[] pkcs7SignatureValue;
-		private String signatureName;
+		private final TimestampToken timestampToken;
+		private final byte[] pkcs7SignatureValue;
+		private final String signatureName;
 
 		public SignReturn(String signatureName, byte[] pkcs7SignatureValue, TimestampToken timestampToken) {
 			super();
@@ -1408,9 +1411,9 @@ public class PDFSign {
 	
 	public static class PresignReturn {
 		private InputStream dataToSign;
-		private String signatureName;
+		private final String signatureName;
 		private byte[] hashToSign;
-		private PdfSignatureAppearance pdfSignatureAppearance;
+		private final PdfSignatureAppearance pdfSignatureAppearance;
 		
 		public PresignReturn(InputStream dataToSign, String signatureName) {
 		    this(dataToSign, signatureName, null);
@@ -1439,9 +1442,9 @@ public class PDFSign {
 	}
 	
 	public static class PresignReturnForRawSignature {
-		private String signatureName;
-		private byte[] hashToSign;
-		private byte[] encodedPkcs7WithoutSignature;
+		private final String signatureName;
+		private final byte[] hashToSign;
+		private final byte[] encodedPkcs7WithoutSignature;
 		
 		public PresignReturnForRawSignature(byte[] hashToSign, byte[] encodedPkcs7WithoutSignature, String signatureName) {
 			super();
