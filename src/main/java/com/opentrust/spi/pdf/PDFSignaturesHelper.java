@@ -1,7 +1,5 @@
 package com.opentrust.spi.pdf;
 
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -14,13 +12,13 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.apache.commons.lang.StringUtils;
 import org.bouncycastle.jce.X509Principal;
 
 import com.opentrust.spi.crypto.CertificateHelper;
 import com.opentrust.spi.helpers.DateHelper;
-import com.opentrust.spi.logger.SPILogger;
+import com.opentrust.spi.helpers.StringHelper;
 import com.opentrust.spi.logger.Channel;
+import com.opentrust.spi.logger.SPILogger;
 
 public class PDFSignaturesHelper {
     private final static SPILogger logger = SPILogger.getLogger("PDFSIGN");
@@ -94,7 +92,7 @@ public class PDFSignaturesHelper {
             tokens.put(VARNAME_CONTACT, contact);
 
             //Iterate over variables found in description to perform replacement
-            Pattern variablePattern = Pattern.compile("\\$("+StringUtils.join(tokens.keySet().iterator(), "|")
+            Pattern variablePattern = Pattern.compile("\\$("+StringHelper.join(tokens.keySet().iterator(), "|")
                     +")(\\[([^\\]]*)\\])?");
             Matcher variableMatcher = variablePattern.matcher(descriptionTemplate);
             StringBuffer sb = new StringBuffer();
