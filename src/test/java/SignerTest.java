@@ -60,11 +60,14 @@ public class SignerTest {
 			
 			tspSigner = new PKCS12File("src/test/resources/tsp3.p12", "keynectis");
 			StandaloneTSP standaloneTSP = new StandaloneTSP(tspSigner.mCertificate, tspSigner.mPrivateKey, "1.2.3.4");
+			standaloneTSP.setTspTime("2012/10/10 00:00:00");
 			ArrayList<X509Certificate> certList = new ArrayList<X509Certificate>();
 			certList.add(tspSigner.mCertificate);
 			standaloneTSP.setCertificateChain(certList);
 			defaultTspClient = standaloneTSP;
 			defaultOcspClient = new StandaloneOCSP(defaultSigner.mCertificate, defaultSigner.mPrivateKey);
+			
+			
 
 			rsaSigner = new SoftRSAStoreSigner();
 			String keyId = KeyIdFactory.GetKeyId(defaultSigner.mCertificate);
@@ -132,6 +135,7 @@ public class SignerTest {
 		signer.setContact("118.218");
 		
 		signer.setTspClient(defaultTspClient);
+		
 		signer.setOcspClient(defaultOcspClient);
 		
 		FileInputStream fis = new FileInputStream("src/test/resources/test_signStream.pdf");
