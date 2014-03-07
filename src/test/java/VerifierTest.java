@@ -15,7 +15,6 @@ import com.opentrust.pdfsign.PdfVerifier;
 import com.opentrust.pdfsign.PdfVerifier.PdfValidationResult;
 
 
-@Ignore( "PLEASE FIX IT - Ignored for 2.17-rc-12" ) 
 public class VerifierTest {
 	static
 	{
