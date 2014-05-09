@@ -4,10 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.PrivateKey;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 
 import org.bouncycastle.ocsp.OCSPResp;
 
 import com.keynectis.sequoia.security.signeddocument.Document;
+import com.keynectis.sequoia.security.signeddocument.DocumentSignResult;
 import com.keynectis.sequoia.security.signeddocument.DocumentSigner;
 import com.opentrust.spi.cms.helpers.OCSPResponse;
 import com.opentrust.spi.pdf.PDFSign;
@@ -16,6 +19,7 @@ import com.opentrust.spi.pdf.PdfSignParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.PAdESParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.SignatureLayoutParameters;
 import com.opentrust.spi.pdf.PdfSignParameters.TimestampingParameters;
+import com.opentrust.spi.tsp.TimestampToken;
 
 public class PdfSigner extends DocumentSigner {
 	
@@ -213,7 +217,7 @@ public class PdfSigner extends DocumentSigner {
     }
 
     @Override
-	public void sign(Document doc, OutputStream os) throws Exception {
+	public DocumentSignResult sign(Document doc, OutputStream os) throws Exception {
 		checkSupportedType(doc);
 		
 		PdfDocument pdf = (PdfDocument) doc;
@@ -222,15 +226,27 @@ public class PdfSigner extends DocumentSigner {
 				null, (PrivateKey) getSigningKey(), getSigningChainArray(),
 				getCrls(), getOcspResponses(), getSignatureParameters());
 		
-		//TODO return signature properties
+		if (newPDF == null)
+		    return null;
+		
+		DocumentSignResult result = new DocumentSignResult();
+		result.setSignatureId(newPDF.getSignatureName());
+		result.setSigningCertificate(getSigningCertificate());
+		TimestampToken timestampToken = newPDF.getTimestampToken();
+		if (timestampToken != null) {
+		    result.setSignatureTimestampDate(timestampToken.getDateTime());
+		    Certificate timestampSigner = timestampToken.getSignerCertificate();
+		    if (timestampSigner != null) {
+		        result.setSignatureTimestampSignerCertificate((X509Certificate) timestampSigner);
+		    }
+		}
+		
+		return result;
 	}
 	
 	@Override
 	protected Class[] getSupportedDocumentTypeList() {
 		return new Class [] {PdfDocument.class};
 	}
-
-
-
 
 }
