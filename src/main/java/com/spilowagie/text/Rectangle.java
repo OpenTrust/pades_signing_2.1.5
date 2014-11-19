@@ -858,6 +858,18 @@ public class Rectangle implements Element {
 			this.borderColorBottom = rect.borderColorBottom;
 	}
 	
+	public boolean contains(Rectangle r)
+	{
+		return getLeft() <= r.getLeft() &&
+				getRight() >= r.getRight() &&
+				getBottom() <= r.getBottom() &&
+				getTop() >= r.getTop();
+	}
+	
+	public String getCoordinates()
+	{
+		return String.format("(left=%1$s,right=%2$s,bottom=%3$s,top=%4$s)", getLeft(), getRight(), getBottom(), getTop());
+	}
 	/**
 	 * @return	a String representation of the rectangle
 	 * @see java.lang.Object#toString()
@@ -873,4 +885,20 @@ public class Rectangle implements Element {
 		return buf.toString();
 	}
 
+	/*
+	public static void main(String [] args)
+	{
+		Rectangle ref = new Rectangle(0, 0, 10, 10);
+		Rectangle test = new Rectangle(2, 2, 8, 8);
+		System.out.println(ref.contains(test));
+		test = new Rectangle(-1, 2, 8, 8);
+		System.out.println(ref.contains(test));
+		test = new Rectangle(2, -1, 8, 8);
+		System.out.println(ref.contains(test));		
+		test = new Rectangle(2, 2, 12, 8);
+		System.out.println(ref.contains(test));		
+		test = new Rectangle(2, 2, 8, 12);
+		System.out.println(ref.contains(test));		
+	}
+	*/
 }

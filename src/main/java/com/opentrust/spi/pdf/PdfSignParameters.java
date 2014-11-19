@@ -514,13 +514,23 @@ public class PdfSignParameters {
 	
 	
 	
+	public static class Point
+	{
+		public float x;
+		public float y;
+		public Point(float x, float y) {
+			super();
+			this.x = x;
+			this.y = y;
+		}
+	}
 	public static class SignatureLayoutParameters {
+		// bottom left
 		private float x1;
-
 		private float y1;
 
+		// top right
 		private float x2;
-
 		private float y2;
 
 		private int pageNbr;
@@ -685,6 +695,16 @@ public class PdfSignParameters {
 			this.sigRenderMode = sigRenderMode;
 		}
 
+		public Point getBottomLeft()
+		{
+			return new Point(x1, y1);
+		}
+		
+		public Point getTopRight()
+		{
+			return new Point(x2, y2);
+		}
+		
 		public float getX1() {
 			return x1;
 		}
