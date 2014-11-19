@@ -82,6 +82,7 @@ import com.spilowagie.text.pdf.RandomAccessFileOrArray;
 //TODO : check if there is a fileID in the document to sign. If no fileID -> no fileID in outgoing file. If fileID, use it, along with signDate, to build the new fileID
 public class PDFSign {
 
+	public final static boolean enablePositionCheck = false;
 	public static String PRODUCED_BY = "OpenTrust SPI";
 
 	public static void setPRODUCED_BY(String pRODUCED_BY) {
@@ -1187,6 +1188,7 @@ public class PDFSign {
 			SignatureLayoutParameters signatureLayoutParameters = parameters.getSignatureLayoutParameters();
 			
 			if (!parameters.isSignatureAlreadyExists()) {
+
 				// bottom left point
 				float x1 = signatureLayoutParameters.getX1();
 				float y1 = signatureLayoutParameters.getY1();
@@ -1200,16 +1202,8 @@ public class PDFSign {
 
 
 				// check that the signature rectangle is contained in the page
-				Rectangle pageRectangle = reader.getPageSizeWithRotation(pageNbr);
-				float pgX1 = pageRectangle.getLeft();
-				float pgX2 = pageRectangle.getRight();
-				float pgY1 = pageRectangle.getBottom();
-				float pgY2 = pageRectangle.getTop();
-				
-				if (pgX1 > x1 || pgX2 < x2 || pgY1 > y1 || pgY2 < y2)
-					throw new SPIIllegalDataException(
-							"Given signature rectangle (left=%1$s,right=%2$s,bottom=%3$s,top=%4$s) doesn't fit into page rectangle: (left=%5$s,right=%6$s,bottom=%7$s,top=%8$s)",
-							x1, x2, y1, y2, pgX1, pgX2, pgY1, pgY2);
+				if (enablePositionCheck)
+					checkSignaturePosition(reader, x1, y1, x2, y2, pageNbr);
 
 				sap.setVisibleSignature(new Rectangle(x1, y1, x2, y2), pageNbr, signatureName);
 			}
@@ -1366,6 +1360,21 @@ public class PDFSign {
 		}
 
 		return stp;
+	}
+
+	private static void checkSignaturePosition(PdfReader reader, float x1, float y1, float x2, float y2, int pageNbr)
+			throws Exception {
+		Rectangle pageRectangle = reader.getPageSizeWithRotation(pageNbr);
+		Rectangle signatureRectangle = new Rectangle(x1, y1, x2, y2);
+		
+		if (!pageRectangle.contains(signatureRectangle))
+		{
+			SPIIllegalDataException exception = new SPIIllegalDataException(
+					"pikachu was here Given signature rectangle %s doesn't fit into page rectangle: %s",
+					signatureRectangle.getCoordinates(), pageRectangle.getCoordinates());
+			
+			throw exception;
+		}
 	}
 	
 	public static class SignResult {
